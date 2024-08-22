@@ -12,39 +12,41 @@ const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
 const POLYGON_RPC_URL = 'https://polygon-rpc.com'
 
 const ABI = [
-  'function balanceOf(address owner) view returns (uint256)',
+  'function balanceOf(uint256 fid) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ]
 
 async function getGoldiesBalance(fid: number): Promise<string> {
+  let errorMessage = '';
   try {
-    console.log(`Attempting to fetch balance for FID: ${fid}`)
-    const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL)
-    console.log('Provider created')
+    console.log(`Attempting to fetch balance for FID: ${fid}`);
     
-    const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider)
-    console.log('Contract instance created')
+    const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
+    console.log('Provider created');
     
-    // Convert FID to Ethereum address (this is a placeholder, you might need to adjust this)
-    const address = ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
-    console.log(`Converted FID to address: ${address}`)
+    const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
+    console.log('Contract instance created');
     
-    const balance = await contract.balanceOf(address)
-    console.log(`Raw balance: ${balance.toString()}`)
+    const balance = await contract.balanceOf(fid);
+    console.log(`Raw balance: ${balance.toString()}`);
     
-    const decimals = await contract.decimals()
-    console.log(`Decimals: ${decimals}`)
+    const decimals = await contract.decimals();
+    console.log(`Decimals: ${decimals}`);
     
-    const formattedBalance = ethers.formatUnits(balance, decimals)
-    console.log(`Formatted balance: ${formattedBalance}`)
+    const formattedBalance = ethers.formatUnits(balance, decimals);
+    console.log(`Formatted balance: ${formattedBalance}`);
     
-    return formattedBalance
+    return formattedBalance;
   } catch (error) {
-    console.error('Error in getGoldiesBalance:', error)
+    console.error('Error in getGoldiesBalance:', error);
     if (error instanceof Error) {
-      return `Error: ${error.message}`
+      errorMessage = error.message;
+    } else {
+      errorMessage = 'Unknown error';
     }
-    return 'Unknown error fetching balance'
+    return `Error: ${errorMessage}`;
+  } finally {
+    console.log(`Balance fetch attempt completed. Error: ${errorMessage}`);
   }
 }
 
@@ -96,7 +98,7 @@ app.frame('/check', async (c) => {
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: 48, marginBottom: 20, textAlign: 'center' }}>Your GOLDIES Balance</h1>
-        <p style={{ fontSize: 36, textAlign: 'center' }}>{fid !== undefined ? `${balance} GOLDIES` : 'No connected Farcaster account found'}</p>
+        <p style={{ fontSize: 36, textAlign: 'center' }}>{fid !== undefined ? `${balance}` : 'No connected Farcaster account found'}</p>
         <p style={{ fontSize: 24, marginTop: 20, textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: 24, marginTop: 10, textAlign: 'center' }}>FID Source: {fidSource}</p>
         <p style={{ fontSize: 14, marginTop: 20, maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>
