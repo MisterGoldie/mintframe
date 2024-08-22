@@ -1,4 +1,4 @@
-import { Button, Frog } from 'frog'
+import { Button, Frog, FrameContext } from 'frog'
 import { devtools } from 'frog/dev'
 import { serveStatic } from 'frog/serve-static'
 import { handle } from 'frog/vercel'
@@ -14,18 +14,28 @@ const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
 const POLYGON_RPC_URL = 'https://polygon-rpc.com'
 
 const ABI = [
-  'function balanceOf(address owner) view returns (uint256)',
+  'function balanceOf(uint256 fid) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ]
 
-async function getGoldiesBalance(address: string): Promise<string> {
+async function getGoldiesBalance(fid: number): Promise<string> {
   const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL)
   const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider)
   
-  const balance = await contract.balanceOf(address)
+  const balance = await contract.balanceOf(fid)
   const decimals = await contract.decimals()
   
   return ethers.formatUnits(balance, decimals)
+}
+
+// Define the structure of the verified object
+interface Verified {
+  fid: number;
+}
+
+// Type guard to check if an object is of type Verified
+function isVerified(obj: any): obj is Verified {
+  return typeof obj === 'object' && obj !== null && 'fid' in obj && typeof obj.fid === 'number';
 }
 
 app.frame('/', (c) => {
@@ -78,14 +88,18 @@ app.frame('/', (c) => {
   })
 })
 
-app.frame('/check-balance', async (c) => {
-  const { frameData } = c
+app.frame('/check-balance', async (c: FrameContext) => {
+  const { frameData, verified } = c
   let balance = '0'
-  let address = frameData?.address || ''
+  let fid: number | undefined
 
-  if (address) {
+  if (isVerified(verified)) {
+    fid = verified.fid
+  }
+
+  if (fid !== undefined) {
     try {
-      balance = await getGoldiesBalance(address)
+      balance = await getGoldiesBalance(fid)
     } catch (error) {
       console.error('Error fetching balance:', error)
       balance = 'Error fetching balance'
@@ -104,6 +118,7 @@ app.frame('/check-balance', async (c) => {
           justifyContent: 'center',
           textAlign: 'center',
           width: '100%',
+          padding: '20px',
         }}
       >
         <div
@@ -123,7 +138,27 @@ app.frame('/check-balance', async (c) => {
             marginTop: 20,
           }}
         >
-          {address ? `${balance} GOLDIES` : 'No connected wallet found'}
+          {fid !== undefined ? `${balance} GOLDIES` : 'No connected Farcaster account found'}
+        </div>
+        <div
+          style={{
+            color: 'black',
+            fontSize: 24,
+            marginTop: 20,
+          }}
+        >
+          Farcaster ID: {fid !== undefined ? fid : 'Not available'}
+        </div>
+        <div
+          style={{
+            color: 'black',
+            fontSize: 14,
+            marginTop: 20,
+            wordWrap: 'break-word',
+            maxWidth: '100%',
+          }}
+        >
+          Debug Info: {JSON.stringify({ frameData, verified }, null, 2)}
         </div>
       </div>
     ),
