@@ -79,8 +79,9 @@ app.frame('/', (c) => {
 })
 
 app.frame('/check-balance', async (c) => {
+  const { frameData } = c
   let balance = '0'
-  let address = c.frameData?.address || ''
+  let address = frameData?.address || ''
 
   if (address) {
     try {
