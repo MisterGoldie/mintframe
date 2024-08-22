@@ -17,6 +17,10 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
+function fidToAddress(fid: number): string {
+  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
+}
+
 async function getGoldiesBalance(fid: number): Promise<string> {
   let errorMessage = '';
   try {
@@ -28,9 +32,8 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
     console.log('Contract instance created on Polygon');
     
-    // Replace fidToAddress with a known address
-    const address = '0xB57381C7eD83BB9031a786d2C691cc6C7C2207a4';
-    console.log(`Using hardcoded address: ${address}`);
+    const address = fidToAddress(fid);
+    console.log(`Converted FID to address: ${address}`);
     
     const balance = await contract.balanceOf(address);
     console.log(`Raw balance on Polygon: ${balance.toString()}`);
@@ -160,7 +163,8 @@ app.frame('/check', async (c) => {
     intents: [
       <Button action="/">Back</Button>,
       <Button action="/check">Refresh Balance</Button>,
-      fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null
+      fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null,
+      <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
     ]
   })
 })
