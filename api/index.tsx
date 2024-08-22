@@ -12,9 +12,13 @@ const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
 const POLYGON_RPC_URL = 'https://polygon-rpc.com'
 
 const ABI = [
-  'function balanceOf(uint256 fid) view returns (uint256)',
+  'function balanceOf(address account) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ]
+
+function fidToAddress(fid: number): string {
+  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
+}
 
 async function getGoldiesBalance(fid: number): Promise<string> {
   let errorMessage = '';
@@ -27,7 +31,10 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
     console.log('Contract instance created');
     
-    const balance = await contract.balanceOf(fid);
+    const address = fidToAddress(fid);
+    console.log(`Converted FID to address: ${address}`);
+    
+    const balance = await contract.balanceOf(address);
     console.log(`Raw balance: ${balance.toString()}`);
     
     const decimals = await contract.decimals();
@@ -36,12 +43,14 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     const formattedBalance = ethers.formatUnits(balance, decimals);
     console.log(`Formatted balance: ${formattedBalance}`);
     
-    // Format to 2 decimal places
     return Number(formattedBalance).toFixed(2);
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error);
     if (error instanceof Error) {
       errorMessage = error.message;
+      if (error.message.includes('CALL_EXCEPTION')) {
+        errorMessage = 'Contract call failed. The balance may not be available for this address.';
+      }
     } else {
       errorMessage = 'Unknown error';
     }
@@ -50,6 +59,24 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     console.log(`Balance fetch attempt completed. Error: ${errorMessage}`);
   }
 }
+
+app.frame('/', (c) => {
+  return c.res({
+    image: (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0' }}>
+        <img
+          src="https://amaranth-adequate-condor-278.mypinata.cloud/ipfs/QmVfEoPSGHFGByQoGxUUwPq2qzE4uKXT7CSKVaigPANmjZ"
+          alt="GOLDIES Token"
+          style={{ width: '80%', maxHeight: '70%', objectFit: 'contain' }}
+        />
+        <h1 style={{ fontSize: 36, marginTop: 20 }}>Check Your GOLDIES Balance</h1>
+      </div>
+    ),
+    intents: [
+      <Button action="/check">Check Balance</Button>
+    ]
+  })
+})
 
 app.frame('/check', async (c) => {
   const debugInfo: any = {
