@@ -165,7 +165,6 @@ app.frame('/check', async (c) => {
     intents: [
       <Button action="/">Back</Button>,
       <Button action="/check">Refresh Balance</Button>,
-      fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null
     ]
   })
 })
