@@ -38,26 +38,60 @@ async function getGoldiesBalance(address: string): Promise<string> {
   }
 }
 
-function fidToAddress(fid: number): string {
-  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
-}
+app.frame('/', (c) => {
+  return c.res({
+    image: (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <img
+          src="https://amaranth-adequate-condor-278.mypinata.cloud/ipfs/QmVfEoPSGHFGByQoGxUUwPq2qzE4uKXT7CSKVaigPANmjZ"
+          alt="$GOLDIES Token"
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center'
+          }}
+        />
+        <h1 style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '0',
+          right: '0',
+          textAlign: 'center',
+          color: 'white',
+          fontSize: '48px',
+          fontWeight: 'bold',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+        }}>
+          Check Your $GOLDIES balance
+        </h1>
+      </div>
+    ),
+    intents: [
+      <Button action="/check">Check Balance</Button>,
+    ]
+  })
+})
 
 app.frame('/check', async (c) => {
   const { frameData, verified } = c;
   const fid = frameData?.fid as number | undefined;
   
   let address: string | undefined;
-  let verificationStatus = 'Unverified';
 
-  if (verified && typeof verified === 'object') {
-    const verifiedObj = verified as Record<string, unknown>;
-    address = (verifiedObj.walletAddress as string) || 
-              (verifiedObj.address as string) || 
-              (verifiedObj.custody as string);
-    verificationStatus = 'Verified';
-  } else if (fid) {
-    address = fidToAddress(fid);
-    verificationStatus = 'Derived (Unverified)';
+  if (typeof verified === 'object' && verified !== null) {
+    const verifiedData = verified as { [key: string]: any };
+    address = verifiedData.walletAddress || verifiedData.address || verifiedData.custody;
   }
 
   let balance = 'N/A';
@@ -73,7 +107,7 @@ app.frame('/check', async (c) => {
       balanceDisplay = balance;
     }
   } else {
-    balanceDisplay = 'No Ethereum address available. Please ensure your wallet is connected to Farcaster.';
+    balanceDisplay = 'No connected Ethereum address found';
   }
 
   const debugInfo = JSON.stringify({
@@ -81,7 +115,6 @@ app.frame('/check', async (c) => {
     verified,
     fid,
     address,
-    verificationStatus,
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
@@ -94,7 +127,6 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Status: {verificationStatus}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
