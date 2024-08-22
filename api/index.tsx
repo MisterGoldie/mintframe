@@ -91,7 +91,7 @@ app.frame('/', (c) => {
           right: '0',
           textAlign: 'center',
           color: 'white',
-          fontSize: '36px',
+          fontSize: '48px',
           fontWeight: 'bold',
           textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
         }}>
