@@ -102,7 +102,6 @@ app.frame('/', (c) => {
     ),
     intents: [
       <Button action="/check">Check Balance</Button>,
-      <Button action="/connect">Connect Wallet</Button>
     ]
   })
 })
