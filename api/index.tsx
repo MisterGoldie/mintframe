@@ -12,22 +12,39 @@ const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
 const POLYGON_RPC_URL = 'https://polygon-rpc.com'
 
 const ABI = [
-  'function balanceOf(uint256 fid) view returns (uint256)',
+  'function balanceOf(address owner) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ]
 
 async function getGoldiesBalance(fid: number): Promise<string> {
   try {
+    console.log(`Attempting to fetch balance for FID: ${fid}`)
     const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL)
+    console.log('Provider created')
+    
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider)
+    console.log('Contract instance created')
     
-    const balance = await contract.balanceOf(fid)
+    // Convert FID to Ethereum address (this is a placeholder, you might need to adjust this)
+    const address = ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
+    console.log(`Converted FID to address: ${address}`)
+    
+    const balance = await contract.balanceOf(address)
+    console.log(`Raw balance: ${balance.toString()}`)
+    
     const decimals = await contract.decimals()
+    console.log(`Decimals: ${decimals}`)
     
-    return ethers.formatUnits(balance, decimals)
+    const formattedBalance = ethers.formatUnits(balance, decimals)
+    console.log(`Formatted balance: ${formattedBalance}`)
+    
+    return formattedBalance
   } catch (error) {
-    console.error('Error fetching balance:', error)
-    return 'Error fetching balance'
+    console.error('Error in getGoldiesBalance:', error)
+    if (error instanceof Error) {
+      return `Error: ${error.message}`
+    }
+    return 'Unknown error fetching balance'
   }
 }
 
@@ -58,23 +75,9 @@ app.frame('/check', async (c) => {
   let fid: number | undefined
   let fidSource = 'Not found'
 
-  // Type assertion for c.verified
-  const verifiedData = c.verified as { fid?: number; userId?: number } | boolean
-
-  if (typeof verifiedData === 'object' && verifiedData !== null) {
-    if (typeof verifiedData.fid === 'number') {
-      fid = verifiedData.fid
-      fidSource = 'verified.fid'
-    } else if (typeof verifiedData.userId === 'number') {
-      fid = verifiedData.userId
-      fidSource = 'verified.userId'
-    }
-  }
-
-  // Type assertion for c.frameData
   const frameData = c.frameData as { fid?: number } | null
 
-  if (fid === undefined && frameData && typeof frameData.fid === 'number') {
+  if (frameData && typeof frameData.fid === 'number') {
     fid = frameData.fid
     fidSource = 'frameData.fid'
   }
