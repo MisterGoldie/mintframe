@@ -36,7 +36,8 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     const formattedBalance = ethers.formatUnits(balance, decimals);
     console.log(`Formatted balance: ${formattedBalance}`);
     
-    return formattedBalance;
+    // Format to 2 decimal places
+    return Number(formattedBalance).toFixed(2);
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error);
     if (error instanceof Error) {
@@ -49,24 +50,6 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     console.log(`Balance fetch attempt completed. Error: ${errorMessage}`);
   }
 }
-
-app.frame('/', (c) => {
-  return c.res({
-    image: (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0' }}>
-        <img
-          src="https://amaranth-adequate-condor-278.mypinata.cloud/ipfs/QmVfEoPSGHFGByQoGxUUwPq2qzE4uKXT7CSKVaigPANmjZ"
-          alt="GOLDIES Token"
-          style={{ width: '80%', maxHeight: '70%', objectFit: 'contain' }}
-        />
-        <h1 style={{ fontSize: 36, marginTop: 20 }}>Check Your GOLDIES Balance</h1>
-      </div>
-    ),
-    intents: [
-      <Button action="/check">Check Balance</Button>
-    ]
-  })
-})
 
 app.frame('/check', async (c) => {
   const debugInfo: any = {
@@ -94,11 +77,20 @@ app.frame('/check', async (c) => {
 
   debugInfo.balance = balance
 
+  let balanceDisplay = ''
+  if (balance === '0.00') {
+    balanceDisplay = "You don't have any GOLDIES tokens yet!"
+  } else if (!balance.startsWith('Error')) {
+    balanceDisplay = `${balance} GOLDIES`
+  } else {
+    balanceDisplay = balance
+  }
+
   return c.res({
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: 48, marginBottom: 20, textAlign: 'center' }}>Your GOLDIES Balance</h1>
-        <p style={{ fontSize: 36, textAlign: 'center' }}>{fid !== undefined ? `${balance}` : 'No connected Farcaster account found'}</p>
+        <p style={{ fontSize: 36, textAlign: 'center' }}>{fid !== undefined ? balanceDisplay : 'No connected Farcaster account found'}</p>
         <p style={{ fontSize: 24, marginTop: 20, textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: 24, marginTop: 10, textAlign: 'center' }}>FID Source: {fidSource}</p>
         <p style={{ fontSize: 14, marginTop: 20, maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>
