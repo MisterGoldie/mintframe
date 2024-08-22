@@ -5,7 +5,7 @@ import { ethers } from 'ethers'
 export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
-  title: 'GOLDIES Token Tracker on Polygon',
+  title: '$GOLDIES Token Tracker on Polygon',
 })
 
 const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
