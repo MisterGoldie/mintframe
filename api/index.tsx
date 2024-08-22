@@ -1,10 +1,6 @@
 import { Button, Frog } from 'frog'
 import { handle } from 'frog/vercel'
 import { ethers } from 'ethers'
-import { FarcasterNetwork } from '@farcaster/hub-nodejs'
-import { createWalletClient, http } from 'viem'
-import { mainnet } from 'viem/chains'
-import { getAddressesForFid } from '@farcaster/auth-kit'
 
 const DEBUG = false; // Set to true to show debug info
 
@@ -23,34 +19,6 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-async function resolveFidToAddress(fid: number): Promise<string | null> {
-  try {
-    console.log(`Attempting to resolve FID: ${fid} to Ethereum address`);
-    
-    const client = createWalletClient({
-      chain: mainnet,
-      transport: http()
-    });
-
-    const addresses = await getAddressesForFid({
-      fid,
-      client,
-    });
-
-    if (addresses.length > 0) {
-      const address = addresses[0];
-      console.log(`Resolved address for FID ${fid}: ${address}`);
-      return address;
-    } else {
-      console.log(`No verified address found for FID ${fid}`);
-      return null;
-    }
-  } catch (error) {
-    console.error('Error resolving FID to address:', error);
-    return null;
-  }
-}
-
 async function getGoldiesBalance(fid: number): Promise<string> {
   let errorMessage = '';
   try {
@@ -62,11 +30,9 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
     console.log('Contract instance created on Polygon');
     
-    const address = await resolveFidToAddress(fid);
-    if (!address) {
-      return 'Error: Unable to resolve FID to Ethereum address';
-    }
-    console.log(`Resolved address: ${address}`);
+    // Replace fidToAddress with a known address
+    const address = '0xB57381C7eD83BB9031a786d2C691cc6C7C2207a4';
+    console.log(`Using hardcoded address: ${address}`);
     
     const balance = await contract.balanceOf(address);
     console.log(`Raw balance on Polygon: ${balance.toString()}`);
