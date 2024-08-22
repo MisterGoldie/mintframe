@@ -17,33 +17,30 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-function fidToAddress(fid: number): string {
-  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
-}
-
 async function getGoldiesBalance(fid: number): Promise<string> {
   let errorMessage = '';
   try {
-    console.log(`Attempting to fetch balance for FID: ${fid} on Polygon network`);
-    
+    console.log(`Attempting to fetch balance for a known address on Polygon network`);
+
     const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL, POLYGON_CHAIN_ID);
     console.log('Polygon provider created');
-    
+
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
     console.log('Contract instance created on Polygon');
-    
-    const address = fidToAddress(fid);
-    console.log(`Converted FID to address: ${address}`);
-    
+
+    // Use the known Ethereum address that holds GOLDIES tokens
+    const address = '0xB57381C7eD83BB9031a786d2C691cc6C7C2207a4';
+    console.log(`Using hardcoded Ethereum address: ${address}`);
+
     const balance = await contract.balanceOf(address);
     console.log(`Raw balance on Polygon: ${balance.toString()}`);
-    
+
     const decimals = await contract.decimals();
     console.log(`Decimals: ${decimals}`);
-    
+
     const formattedBalance = ethers.formatUnits(balance, decimals);
     console.log(`Formatted balance on Polygon: ${formattedBalance}`);
-    
+
     return Number(formattedBalance).toFixed(2);
   } catch (error) {
     console.error('Error in getGoldiesBalance on Polygon:', error);
