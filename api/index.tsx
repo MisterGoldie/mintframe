@@ -2,6 +2,8 @@ import { Button, Frog } from 'frog'
 import { handle } from 'frog/vercel'
 import { ethers } from 'ethers'
 
+const DEBUG = false; // Set to true to show debug info
+
 export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
@@ -118,22 +120,22 @@ app.frame('/connect', (c) => {
 })
 
 app.frame('/check', async (c) => {
-  const { frameData, verified } = c
-  const fid = frameData?.fid as number | undefined
-  const fidSource = fid ? 'frameData.fid' : 'Not found'
+  const { frameData, verified } = c;
+  const fid = frameData?.fid as number | undefined;
+  const fidSource = fid ? 'frameData.fid' : 'Not found';
 
-  let balance = 'N/A'
+  let balance = 'N/A';
   if (fid !== undefined) {
-    balance = await getGoldiesBalance(fid)
+    balance = await getGoldiesBalance(fid);
   }
 
-  let balanceDisplay = ''
+  let balanceDisplay = '';
   if (balance === '0.00') {
-    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
+    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
   } else if (!balance.startsWith('Error')) {
-    balanceDisplay = `${balance} $GOLDIES on Polygon`
+    balanceDisplay = `${balance} $GOLDIES on Polygon`;
   } else {
-    balanceDisplay = balance
+    balanceDisplay = balance;
   }
 
   const debugInfo = JSON.stringify({
@@ -144,7 +146,7 @@ app.frame('/check', async (c) => {
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
-  }, null, 2)
+  }, null, 2);
 
   return c.res({
     image: (
@@ -154,7 +156,9 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>FID Source: {fidSource}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
-        <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
+        {DEBUG && (
+          <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
+        )}
       </div>
     ),
     intents: [
@@ -162,8 +166,8 @@ app.frame('/check', async (c) => {
       <Button action="/check">Refresh Balance</Button>,
       fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null
     ]
-  })
-})
+  });
+});
 
-export const GET = handle(app)
-export const POST = handle(app)
+export const GET = handle(app);
+export const POST = handle(app);
