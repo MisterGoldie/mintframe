@@ -91,7 +91,7 @@ app.frame('/', (c) => {
           right: '0',
           textAlign: 'center',
           color: 'white',
-          fontSize: '48px',
+          fontSize: '36px',
           fontWeight: 'bold',
           textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
         }}>
@@ -108,7 +108,7 @@ app.frame('/', (c) => {
 app.frame('/connect', (c) => {
   return c.res({
     image: (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FA7A01', padding: '20px', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
 
       </div>
     ),
