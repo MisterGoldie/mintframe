@@ -17,10 +17,6 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-function fidToAddress(fid: number): string {
-  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
-}
-
 async function getGoldiesBalance(fid: number): Promise<string> {
   let errorMessage = '';
   try {
@@ -32,8 +28,9 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
     console.log('Contract instance created on Polygon');
     
-    const address = fidToAddress(fid);
-    console.log(`Converted FID to address: ${address}`);
+    // Replace fidToAddress with a known address
+    const address = '0xB57381C7eD83BB9031a786d2C691cc6C7C2207a4';
+    console.log(`Using hardcoded address: ${address}`);
     
     const balance = await contract.balanceOf(address);
     console.log(`Raw balance on Polygon: ${balance.toString()}`);
