@@ -49,37 +49,55 @@ app.frame('/', (c) => {
   })
 })
 
-// Define an interface for the verified object
-interface VerifiedData {
-  fid?: number;
-}
-
-// Type guard to check if the verified data is of type VerifiedData
-function isVerifiedData(verified: unknown): verified is VerifiedData {
-  return typeof verified === 'object' && verified !== null && 'fid' in verified;
-}
-
 app.frame('/check', async (c) => {
-  const { frameData, verified } = c
-  let fid: number | undefined;
-  
-  if (isVerifiedData(verified)) {
-    fid = verified.fid;
+  const debugInfo: any = {
+    frameData: c.frameData,
+    verified: c.verified,
   }
-  
+
+  let fid: number | undefined
+  let fidSource = 'Not found'
+
+  // Type assertion for c.verified
+  const verifiedData = c.verified as { fid?: number; userId?: number } | boolean
+
+  if (typeof verifiedData === 'object' && verifiedData !== null) {
+    if (typeof verifiedData.fid === 'number') {
+      fid = verifiedData.fid
+      fidSource = 'verified.fid'
+    } else if (typeof verifiedData.userId === 'number') {
+      fid = verifiedData.userId
+      fidSource = 'verified.userId'
+    }
+  }
+
+  // Type assertion for c.frameData
+  const frameData = c.frameData as { fid?: number } | null
+
+  if (fid === undefined && frameData && typeof frameData.fid === 'number') {
+    fid = frameData.fid
+    fidSource = 'frameData.fid'
+  }
+
+  debugInfo.fidSource = fidSource
+  debugInfo.fid = fid
+
   let balance = 'N/A'
   if (fid !== undefined) {
     balance = await getGoldiesBalance(fid)
   }
 
+  debugInfo.balance = balance
+
   return c.res({
     image: (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0' }}>
-        <h1 style={{ fontSize: 48, marginBottom: 20 }}>Your GOLDIES Balance</h1>
-        <p style={{ fontSize: 36 }}>{fid !== undefined ? `${balance} GOLDIES` : 'No connected Farcaster account found'}</p>
-        <p style={{ fontSize: 24, marginTop: 20 }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
-        <p style={{ fontSize: 14, marginTop: 20, maxWidth: '80%', wordWrap: 'break-word' }}>
-          Debug Info: {JSON.stringify({ frameData, verified, balance }, null, 2)}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
+        <h1 style={{ fontSize: 48, marginBottom: 20, textAlign: 'center' }}>Your GOLDIES Balance</h1>
+        <p style={{ fontSize: 36, textAlign: 'center' }}>{fid !== undefined ? `${balance} GOLDIES` : 'No connected Farcaster account found'}</p>
+        <p style={{ fontSize: 24, marginTop: 20, textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
+        <p style={{ fontSize: 24, marginTop: 10, textAlign: 'center' }}>FID Source: {fidSource}</p>
+        <p style={{ fontSize: 14, marginTop: 20, maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>
+          Debug Info: {JSON.stringify(debugInfo, null, 2)}
         </p>
       </div>
     ),
