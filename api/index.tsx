@@ -63,13 +63,40 @@ async function getGoldiesBalance(fid: number): Promise<string> {
 app.frame('/', (c) => {
   return c.res({
     image: (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
         <img
           src="https://amaranth-adequate-condor-278.mypinata.cloud/ipfs/QmVfEoPSGHFGByQoGxUUwPq2qzE4uKXT7CSKVaigPANmjZ"
           alt="GOLDIES Token"
-          style={{ width: '80%', maxHeight: '70%', objectFit: 'contain' }}
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center'
+          }}
         />
-        <h1 style={{ fontSize: '36px', marginTop: '20px' }}>Check Your GOLDIES Balance</h1>
+        <h1 style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '0',
+          right: '0',
+          textAlign: 'center',
+          color: 'white',
+          fontSize: '36px',
+          fontWeight: 'bold',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+        }}>
+          Check Your GOLDIES Balance
+        </h1>
       </div>
     ),
     intents: [
