@@ -53,57 +53,13 @@ async function getGoldiesBalance(address: string): Promise<string> {
   }
 }
 
-app.frame('/', (c) => {
-  return c.res({
-    image: (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        height: '100%',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <img
-          src="https://amaranth-adequate-condor-278.mypinata.cloud/ipfs/QmVfEoPSGHFGByQoGxUUwPq2qzE4uKXT7CSKVaigPANmjZ"
-          alt="GOLDIES Token"
-          style={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center'
-          }}
-        />
-        <h1 style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '0',
-          right: '0',
-          textAlign: 'center',
-          color: 'white',
-          fontSize: '36px',
-          fontWeight: 'bold',
-          textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
-        }}>
-          Check Your GOLDIES Balance
-        </h1>
-      </div>
-    ),
-    intents: [
-      <Button action="/check">Check Balance</Button>
-    ]
-  })
-})
-
 app.frame('/check', async (c) => {
   const { frameData, verified } = c
   const fid = frameData?.fid as number | undefined
   
-  // Attempt to get the address from frameData
-  const address = typeof frameData === 'object' && frameData !== null ? frameData.address as string | undefined : undefined
+  // Use type assertion for verified object
+  const verifiedData = verified as { custody?: string } | boolean
+  const address = typeof verifiedData === 'object' && verifiedData?.custody
 
   let balance = 'N/A'
   if (address) {
@@ -119,7 +75,7 @@ app.frame('/check', async (c) => {
     balanceDisplay = balance
   }
 
-  const debugInfo = JSON.stringify({ frameData, verified, fid, address, balance }, null, 2)
+  const debugInfo = JSON.stringify({ frameData, verified: verifiedData, fid, address, balance }, null, 2)
 
   return c.res({
     image: (
@@ -138,5 +94,6 @@ app.frame('/check', async (c) => {
   })
 })
 
+// Make sure to include this at the end of the file
 export const GET = handle(app)
 export const POST = handle(app)
