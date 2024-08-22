@@ -2,7 +2,9 @@ import { Button, Frog } from 'frog'
 import { handle } from 'frog/vercel'
 import { ethers } from 'ethers'
 import { FarcasterNetwork } from '@farcaster/hub-nodejs'
-import { ViemWalletEip712Signer } from '@farcaster/auth-kit'
+import { createWalletClient, http } from 'viem'
+import { mainnet } from 'viem/chains'
+import { getAddressesForFid } from '@farcaster/auth-kit'
 
 const DEBUG = false; // Set to true to show debug info
 
@@ -24,14 +26,19 @@ const ABI = [
 async function resolveFidToAddress(fid: number): Promise<string | null> {
   try {
     console.log(`Attempting to resolve FID: ${fid} to Ethereum address`);
-    const network = FarcasterNetwork.MAINNET;
     
-    // Use ViemWalletEip712Signer instead of getAuthClientForFid
-    const signer = new ViemWalletEip712Signer();
-    const result = await signer.getSignerByFid(fid);
-    
-    if (result.success) {
-      const address = result.value.address;
+    const client = createWalletClient({
+      chain: mainnet,
+      transport: http()
+    });
+
+    const addresses = await getAddressesForFid({
+      fid,
+      client,
+    });
+
+    if (addresses.length > 0) {
+      const address = addresses[0];
       console.log(`Resolved address for FID ${fid}: ${address}`);
       return address;
     } else {
@@ -87,8 +94,115 @@ async function getGoldiesBalance(fid: number): Promise<string> {
   }
 }
 
-// The rest of your code remains the same
-// ...
+app.frame('/', (c) => {
+  return c.res({
+    image: (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <img
+          src="https://amaranth-adequate-condor-278.mypinata.cloud/ipfs/QmVfEoPSGHFGByQoGxUUwPq2qzE4uKXT7CSKVaigPANmjZ"
+          alt="$GOLDIES Token"
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center'
+          }}
+        />
+        <h1 style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '0',
+          right: '0',
+          textAlign: 'center',
+          color: 'white',
+          fontSize: '48px',
+          fontWeight: 'bold',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+        }}>
+          Check Your $GOLDIES balance
+        </h1>
+      </div>
+    ),
+    intents: [
+      <Button action="/check">Check Balance</Button>,
+    ]
+  })
+})
+
+app.frame('/connect', (c) => {
+  return c.res({
+    image: (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
+
+      </div>
+    ),
+    intents: [
+      <Button action="/">Back</Button>,
+      <Button action="/check">Check Balance</Button>
+    ]
+  })
+})
+
+app.frame('/check', async (c) => {
+  const { frameData, verified } = c;
+  const fid = frameData?.fid as number | undefined;
+  const fidSource = fid ? 'frameData.fid' : 'Not found';
+
+  let balance = 'N/A';
+  if (fid !== undefined) {
+    balance = await getGoldiesBalance(fid);
+  }
+
+  let balanceDisplay = '';
+  if (balance === '0.00') {
+    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
+  } else if (!balance.startsWith('Error')) {
+    balanceDisplay = `${balance} $GOLDIES on Polygon`;
+  } else {
+    balanceDisplay = balance;
+  }
+
+  const debugInfo = JSON.stringify({
+    frameData,
+    verified,
+    fidSource,
+    fid,
+    balance,
+    network: 'Polygon',
+    chainId: POLYGON_CHAIN_ID
+  }, null, 2);
+
+  return c.res({
+    image: (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
+        <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance on Polygon</h1>
+        <p style={{ fontSize: '36px', textAlign: 'center' }}>{fid !== undefined ? balanceDisplay : 'No connected Farcaster account found'}</p>
+        <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>FID Source: {fidSource}</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
+        {DEBUG && (
+          <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
+        )}
+      </div>
+    ),
+    intents: [
+      <Button action="/">Back</Button>,
+      <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
+      <Button action="/check">Refresh Balance</Button>,
+      fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null
+    ]
+  });
+});
 
 export const GET = handle(app);
 export const POST = handle(app);
