@@ -16,6 +16,10 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
+function fidToAddress(fid: number): string {
+  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
+}
+
 async function getGoldiesBalance(address: string): Promise<string> {
   let errorMessage = '';
   try {
@@ -57,9 +61,10 @@ app.frame('/check', async (c) => {
   const { frameData, verified } = c
   const fid = frameData?.fid as number | undefined
   
-  // Use type assertion for verified object
-  const verifiedData = verified as { custody?: string } | boolean
-  const address = typeof verifiedData === 'object' && verifiedData?.custody
+  let address: string | undefined
+  if (fid) {
+    address = fidToAddress(fid)
+  }
 
   let balance = 'N/A'
   if (address) {
@@ -75,7 +80,7 @@ app.frame('/check', async (c) => {
     balanceDisplay = balance
   }
 
-  const debugInfo = JSON.stringify({ frameData, verified: verifiedData, fid, address, balance }, null, 2)
+  const debugInfo = JSON.stringify({ frameData, verified, fid, address, balance }, null, 2)
 
   return c.res({
     image: (
@@ -94,6 +99,5 @@ app.frame('/check', async (c) => {
   })
 })
 
-// Make sure to include this at the end of the file
 export const GET = handle(app)
 export const POST = handle(app)
