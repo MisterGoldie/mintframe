@@ -69,7 +69,7 @@ app.frame('/', (c) => {
           alt="GOLDIES Token"
           style={{ width: '80%', maxHeight: '70%', objectFit: 'contain' }}
         />
-        <h1 style={{ fontSize: 36, marginTop: 20 }}>Check Your GOLDIES Balance</h1>
+        <h1 style={{ fontSize: '36px', marginTop: '20px' }}>Check Your GOLDIES Balance</h1>
       </div>
     ),
     intents: [
@@ -79,30 +79,14 @@ app.frame('/', (c) => {
 })
 
 app.frame('/check', async (c) => {
-  const debugInfo: any = {
-    frameData: c.frameData,
-    verified: c.verified,
-  }
-
-  let fid: number | undefined
-  let fidSource = 'Not found'
-
-  const frameData = c.frameData as { fid?: number } | null
-
-  if (frameData && typeof frameData.fid === 'number') {
-    fid = frameData.fid
-    fidSource = 'frameData.fid'
-  }
-
-  debugInfo.fidSource = fidSource
-  debugInfo.fid = fid
+  const { frameData, verified } = c
+  const fid = frameData?.fid as number | undefined
+  const fidSource = fid ? 'frameData.fid' : 'Not found'
 
   let balance = 'N/A'
   if (fid !== undefined) {
     balance = await getGoldiesBalance(fid)
   }
-
-  debugInfo.balance = balance
 
   let balanceDisplay = ''
   if (balance === '0.00') {
@@ -113,16 +97,16 @@ app.frame('/check', async (c) => {
     balanceDisplay = balance
   }
 
+  const debugInfo = JSON.stringify({ frameData, verified, fidSource, fid, balance }, null, 2)
+
   return c.res({
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
-        <h1 style={{ fontSize: 48, marginBottom: 20, textAlign: 'center' }}>Your GOLDIES Balance</h1>
-        <p style={{ fontSize: 36, textAlign: 'center' }}>{fid !== undefined ? balanceDisplay : 'No connected Farcaster account found'}</p>
-        <p style={{ fontSize: 24, marginTop: 20, textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
-        <p style={{ fontSize: 24, marginTop: 10, textAlign: 'center' }}>FID Source: {fidSource}</p>
-        <p style={{ fontSize: 14, marginTop: 20, maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>
-          Debug Info: {JSON.stringify(debugInfo, null, 2)}
-        </p>
+        <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your GOLDIES Balance</h1>
+        <p style={{ fontSize: '36px', textAlign: 'center' }}>{fid !== undefined ? balanceDisplay : 'No connected Farcaster account found'}</p>
+        <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>FID Source: {fidSource}</p>
+        <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
       </div>
     ),
     intents: [
