@@ -16,23 +16,16 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-function fidToAddress(fid: number): string {
-  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
-}
-
-async function getGoldiesBalance(fid: number): Promise<string> {
+async function getGoldiesBalance(address: string): Promise<string> {
   let errorMessage = '';
   try {
-    console.log(`Attempting to fetch balance for FID: ${fid}`);
+    console.log(`Attempting to fetch balance for address: ${address}`);
     
     const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
     console.log('Provider created');
     
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
     console.log('Contract instance created');
-    
-    const address = fidToAddress(fid);
-    console.log(`Converted FID to address: ${address}`);
     
     const balance = await contract.balanceOf(address);
     console.log(`Raw balance: ${balance.toString()}`);
@@ -108,11 +101,13 @@ app.frame('/', (c) => {
 app.frame('/check', async (c) => {
   const { frameData, verified } = c
   const fid = frameData?.fid as number | undefined
-  const fidSource = fid ? 'frameData.fid' : 'Not found'
+  
+  // Attempt to get the address from frameData
+  const address = typeof frameData === 'object' && frameData !== null ? frameData.address as string | undefined : undefined
 
   let balance = 'N/A'
-  if (fid !== undefined) {
-    balance = await getGoldiesBalance(fid)
+  if (address) {
+    balance = await getGoldiesBalance(address)
   }
 
   let balanceDisplay = ''
@@ -124,15 +119,15 @@ app.frame('/check', async (c) => {
     balanceDisplay = balance
   }
 
-  const debugInfo = JSON.stringify({ frameData, verified, fidSource, fid, balance }, null, 2)
+  const debugInfo = JSON.stringify({ frameData, verified, fid, address, balance }, null, 2)
 
   return c.res({
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your GOLDIES Balance</h1>
-        <p style={{ fontSize: '36px', textAlign: 'center' }}>{fid !== undefined ? balanceDisplay : 'No connected Farcaster account found'}</p>
+        <p style={{ fontSize: '36px', textAlign: 'center' }}>{address ? balanceDisplay : 'No connected Ethereum address found'}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>FID Source: {fidSource}</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
         <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
       </div>
     ),
