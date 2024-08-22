@@ -31,7 +31,7 @@ async function getGoldiesBalance(fid: number): Promise<string> {
     console.log('Contract instance created on Polygon');
     
     // Replace fidToAddress with a known address
-    const address = '0xB57381C7eD83BB9031a786d2C691cc6C7C2207a4';
+    const address = '0x0FB966a06a23211A5dAA089744C532C785e5D26f';
     console.log(`Using hardcoded address: ${address}`);
     
     const balance = await contract.balanceOf(address);
