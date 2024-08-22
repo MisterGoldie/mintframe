@@ -19,52 +19,22 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-async function isGoldiesHolder(address: string): Promise<boolean> {
-  try {
-    const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL, POLYGON_CHAIN_ID);
-    const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
-    const balance = await contract.balanceOf(address);
-    return balance > 0;
-  } catch (error) {
-    console.error('Error checking if address is a GOLDIES holder:', error);
-    return false;
-  }
-}
-
 async function getGoldiesBalance(address: string): Promise<string> {
-  let errorMessage = '';
   try {
-    console.log(`Attempting to fetch balance for address: ${address} on Polygon network`);
-    
+    console.log(`Fetching balance for address: ${address} on Polygon network`);
     const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL, POLYGON_CHAIN_ID);
-    console.log('Polygon provider created');
-    
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
-    console.log('Contract instance created on Polygon');
     
     const balance = await contract.balanceOf(address);
-    console.log(`Raw balance on Polygon: ${balance.toString()}`);
-    
     const decimals = await contract.decimals();
-    console.log(`Decimals: ${decimals}`);
     
     const formattedBalance = ethers.formatUnits(balance, decimals);
-    console.log(`Formatted balance on Polygon: ${formattedBalance}`);
+    console.log(`Formatted balance: ${formattedBalance}`);
     
     return Number(formattedBalance).toFixed(2);
   } catch (error) {
-    console.error('Error in getGoldiesBalance on Polygon:', error);
-    if (error instanceof Error) {
-      errorMessage = error.message;
-      if (error.message.includes('CALL_EXCEPTION')) {
-        errorMessage = 'Contract call failed on Polygon. The balance may not be available for this address.';
-      }
-    } else {
-      errorMessage = 'Unknown error on Polygon network';
-    }
-    return `Error on Polygon: ${errorMessage}`;
-  } finally {
-    console.log(`Balance fetch attempt completed on Polygon. Error: ${errorMessage}`);
+    console.error('Error in getGoldiesBalance:', error);
+    return 'Error: Unable to fetch balance';
   }
 }
 
@@ -117,47 +87,34 @@ app.frame('/check', async (c) => {
   const { frameData, verified } = c;
   const fid = frameData?.fid as number | undefined;
   
-  // Use a more flexible type assertion
-  const verifiedData = verified as { [key: string]: any } | boolean;
-  
   let address: string | undefined;
-  if (typeof verifiedData === 'object' && verifiedData !== null) {
-    if (Array.isArray(verifiedData.etherAddresses) && verifiedData.etherAddresses.length > 0) {
-      address = verifiedData.etherAddresses[0];
-    } else if (typeof verifiedData.custody === 'string') {
-      address = verifiedData.custody;
-    }
+
+  if (typeof verified === 'object' && verified !== null) {
+    const verifiedData = verified as { [key: string]: any };
+    address = verifiedData.walletAddress || verifiedData.address || verifiedData.custody;
   }
 
   let balance = 'N/A';
-  let isHolder = false;
+  let balanceDisplay = '';
 
   if (address) {
-    isHolder = await isGoldiesHolder(address);
-    if (isHolder) {
-      balance = await getGoldiesBalance(address);
+    balance = await getGoldiesBalance(address);
+    if (balance === '0.00') {
+      balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
+    } else if (!balance.startsWith('Error')) {
+      balanceDisplay = `${balance} $GOLDIES on Polygon`;
+    } else {
+      balanceDisplay = balance;
     }
-  }
-
-  let balanceDisplay = '';
-  if (!address) {
-    balanceDisplay = 'No connected Ethereum address found';
-  } else if (!isHolder) {
-    balanceDisplay = "You don't hold any $GOLDIES tokens";
-  } else if (balance === '0.00') {
-    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
-  } else if (!balance.startsWith('Error')) {
-    balanceDisplay = `${balance} $GOLDIES on Polygon`;
   } else {
-    balanceDisplay = balance;
+    balanceDisplay = 'No connected Ethereum address found';
   }
 
   const debugInfo = JSON.stringify({
     frameData,
-    verified: verifiedData,
+    verified,
     fid,
     address,
-    isHolder,
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
@@ -179,8 +136,7 @@ app.frame('/check', async (c) => {
     intents: [
       <Button action="/">Back</Button>,
       <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-      <Button action="/check">Refresh Balance</Button>,
-      !address ? <Button action="/connect">Connect Wallet</Button> : null
+      <Button action="/check">Refresh Balance</Button>
     ]
   });
 });
