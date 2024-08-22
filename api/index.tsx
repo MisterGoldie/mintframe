@@ -1,12 +1,10 @@
-import { Button, Frog, FrameContext } from 'frog'
-import { devtools } from 'frog/dev'
-import { serveStatic } from 'frog/serve-static'
+import { Button, Frog } from 'frog'
 import { handle } from 'frog/vercel'
 import { ethers } from 'ethers'
 
 export const app = new Frog({
-  assetsPath: '/',
   basePath: '/api',
+  imageOptions: { width: 1200, height: 630 },
   title: 'GOLDIES Token Tracker',
 })
 
@@ -19,158 +17,78 @@ const ABI = [
 ]
 
 async function getGoldiesBalance(fid: number): Promise<string> {
-  const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL)
-  const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider)
-  
-  const balance = await contract.balanceOf(fid)
-  const decimals = await contract.decimals()
-  
-  return ethers.formatUnits(balance, decimals)
-}
-
-// Define the structure of the verified object
-interface Verified {
-  fid: number;
-}
-
-// Type guard to check if an object is of type Verified
-function isVerified(obj: any): obj is Verified {
-  return typeof obj === 'object' && obj !== null && 'fid' in obj && typeof obj.fid === 'number';
+  try {
+    const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL)
+    const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider)
+    
+    const balance = await contract.balanceOf(fid)
+    const decimals = await contract.decimals()
+    
+    return ethers.formatUnits(balance, decimals)
+  } catch (error) {
+    console.error('Error fetching balance:', error)
+    return 'Error fetching balance'
+  }
 }
 
 app.frame('/', (c) => {
   return c.res({
     image: (
-      <div
-        style={{
-          alignItems: 'center',
-          background: 'white',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          justifyContent: 'center',
-          textAlign: 'center',
-          width: '100%',
-          position: 'relative',
-        }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0' }}>
         <img
           src="https://amaranth-adequate-condor-278.mypinata.cloud/ipfs/QmVfEoPSGHFGByQoGxUUwPq2qzE4uKXT7CSKVaigPANmjZ"
           alt="GOLDIES Token"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-          }}
+          style={{ width: '80%', maxHeight: '70%', objectFit: 'contain' }}
         />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '20px',
-            left: '0',
-            right: '0',
-            color: 'white',
-            fontSize: '36px',
-            fontWeight: 'bold',
-            textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-          }}
-        >
-          Check Your GOLDIES Balance
-        </div>
+        <h1 style={{ fontSize: 36, marginTop: 20 }}>Check Your GOLDIES Balance</h1>
       </div>
     ),
     intents: [
-      <Button action="/check-balance">Check Balance</Button>,
-    ],
+      <Button action="/check">Check Balance</Button>
+    ]
   })
 })
 
-app.frame('/check-balance', async (c: FrameContext) => {
+// Define an interface for the verified object
+interface VerifiedData {
+  fid?: number;
+}
+
+// Type guard to check if the verified data is of type VerifiedData
+function isVerifiedData(verified: unknown): verified is VerifiedData {
+  return typeof verified === 'object' && verified !== null && 'fid' in verified;
+}
+
+app.frame('/check', async (c) => {
   const { frameData, verified } = c
-  let balance = '0'
-  let fid: number | undefined
-
-  if (isVerified(verified)) {
-    fid = verified.fid
+  let fid: number | undefined;
+  
+  if (isVerifiedData(verified)) {
+    fid = verified.fid;
   }
-
+  
+  let balance = 'N/A'
   if (fid !== undefined) {
-    try {
-      balance = await getGoldiesBalance(fid)
-    } catch (error) {
-      console.error('Error fetching balance:', error)
-      balance = 'Error fetching balance'
-    }
+    balance = await getGoldiesBalance(fid)
   }
 
   return c.res({
     image: (
-      <div
-        style={{
-          alignItems: 'center',
-          background: 'linear-gradient(to right, #FFD700, #FFA500)',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          justifyContent: 'center',
-          textAlign: 'center',
-          width: '100%',
-          padding: '20px',
-        }}
-      >
-        <div
-          style={{
-            color: 'black',
-            fontSize: 48,
-            fontWeight: 'bold',
-            marginBottom: 20,
-          }}
-        >
-          Your GOLDIES Balance
-        </div>
-        <div
-          style={{
-            color: 'black',
-            fontSize: 36,
-            marginTop: 20,
-          }}
-        >
-          {fid !== undefined ? `${balance} GOLDIES` : 'No connected Farcaster account found'}
-        </div>
-        <div
-          style={{
-            color: 'black',
-            fontSize: 24,
-            marginTop: 20,
-          }}
-        >
-          Farcaster ID: {fid !== undefined ? fid : 'Not available'}
-        </div>
-        <div
-          style={{
-            color: 'black',
-            fontSize: 14,
-            marginTop: 20,
-            wordWrap: 'break-word',
-            maxWidth: '100%',
-          }}
-        >
-          Debug Info: {JSON.stringify({ frameData, verified }, null, 2)}
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0' }}>
+        <h1 style={{ fontSize: 48, marginBottom: 20 }}>Your GOLDIES Balance</h1>
+        <p style={{ fontSize: 36 }}>{fid !== undefined ? `${balance} GOLDIES` : 'No connected Farcaster account found'}</p>
+        <p style={{ fontSize: 24, marginTop: 20 }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
+        <p style={{ fontSize: 14, marginTop: 20, maxWidth: '80%', wordWrap: 'break-word' }}>
+          Debug Info: {JSON.stringify({ frameData, verified, balance }, null, 2)}
+        </p>
       </div>
     ),
     intents: [
       <Button action="/">Back</Button>,
-      <Button action="/check-balance">Refresh Balance</Button>,
-    ],
+      <Button action="/check">Refresh Balance</Button>
+    ]
   })
 })
-
-const isProduction = process.env.NODE_ENV === 'production'
-devtools(app, isProduction ? { assetsPath: '/.frog' } : { serveStatic })
 
 export const GET = handle(app)
 export const POST = handle(app)
