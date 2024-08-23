@@ -46,16 +46,11 @@ async function getGoldiesBalance(address: string): Promise<string> {
   }
 }
 
-// Define the expected structure of verified data
-type VerifiedData = {
-  walletAddress?: string;
-  ethAddress?: string;
-  address?: string;
-  // other properties if necessary
-};
-
-function deriveAddressFromFID(fid: number): string {
-  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`);
+// Define the structure of the verified object
+interface VerifiedData {
+  interactor?: {
+    verified_accounts?: string[];
+  };
 }
 
 app.frame('/', (c) => {
@@ -112,15 +107,12 @@ app.frame('/check', async (c) => {
   let address: string | undefined;
   let addressSource: string = 'Not available';
 
-  if (verified && typeof verified === 'object') {
-    const verifiedData = verified as VerifiedData;
-    address = verifiedData.walletAddress || verifiedData.ethAddress || verifiedData.address;
-    if (address) addressSource = 'Verified data';
-  }
+  // Type assertion for verified object
+  const verifiedData = verified as VerifiedData | boolean;
 
-  if (!address && fid) {
-    address = deriveAddressFromFID(fid);
-    addressSource = 'Derived from FID';
+  if (verifiedData && typeof verifiedData === 'object' && 'interactor' in verifiedData) {
+    address = verifiedData.interactor?.verified_accounts?.[0];
+    addressSource = 'Verified Farcaster data';
   }
 
   console.log(`FID: ${fid}, Address: ${address}, Source: ${addressSource}`);
@@ -139,12 +131,12 @@ app.frame('/check', async (c) => {
       balanceDisplay = balance;
     }
   } else {
-    balanceDisplay = 'Unable to retrieve or derive wallet address. Please ensure your wallet is connected to Farcaster.';
+    balanceDisplay = 'Unable to retrieve wallet address. Please ensure your wallet is connected to Farcaster.';
   }
 
   const debugInfo = JSON.stringify({
     frameData,
-    verified,
+    verified: verifiedData,
     fid,
     address,
     addressSource,
