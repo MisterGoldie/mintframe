@@ -19,6 +19,10 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
+function fidToAddress(fid: number): string {
+  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
+}
+
 async function getGoldiesBalance(address: string): Promise<string> {
   let errorMessage = '';
   try {
@@ -107,8 +111,16 @@ app.frame('/check', async (c) => {
   const fidSource = fid ? 'frameData.fid' : 'Not found';
 
   let address: string | undefined;
+  let addressSource = 'Not available'; // Initialize with a default value
+
   if (typeof verified === 'object' && verified !== null) {
     address = (verified as any).walletAddress || (verified as any).address || (verified as any).custody;
+    if (address) addressSource = 'verified object';
+  }
+
+  if (!address && fid) {
+    address = fidToAddress(fid);
+    addressSource = 'derived from FID';
   }
 
   let balance = 'N/A';
@@ -133,6 +145,7 @@ app.frame('/check', async (c) => {
     fidSource,
     fid,
     address,
+    addressSource,
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
@@ -144,7 +157,7 @@ app.frame('/check', async (c) => {
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance on Polygon</h1>
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{address ? balanceDisplay : 'No connected Ethereum address found'}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'} ({addressSource})</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
