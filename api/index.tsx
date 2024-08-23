@@ -4,8 +4,6 @@ import { ethers } from 'ethers';
 
 const DEBUG = true; // Set to true to show debug info
 
-const NEYNAR_API_KEY = '71332A9D-240D-41E0-8644-31BD70E64036';
-
 export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
@@ -20,22 +18,6 @@ const ABI = [
   'function balanceOf(address account) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ];
-
-async function getEthereumAddressFromFID(fid: number): Promise<string | null> {
-  try {
-    const response = await fetch(`https://api.neynar.com/v2/farcaster/user?fid=${fid}`, {
-      headers: {
-        'Accept': 'application/json',
-        'api_key': NEYNAR_API_KEY
-      }
-    });
-    const data = await response.json();
-    return data.result.verified_addresses[0] || null;
-  } catch (error) {
-    console.error('Error fetching Ethereum address from Neynar:', error);
-    return null;
-  }
-}
 
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
@@ -115,14 +97,18 @@ app.frame('/check', async (c) => {
   console.log('Verified:', JSON.stringify(verified, null, 2));
 
   const fid = frameData?.fid as number | undefined;
-  let address: string | null = null;
+  let address: string | undefined;
   let addressSource: string = 'Not available';
 
-  if (fid) {
-    address = await getEthereumAddressFromFID(fid);
-    if (address) {
-      addressSource = 'Neynar API';
-    }
+  // Try to extract address from frameData or verified object
+  if (typeof frameData === 'object' && frameData !== null) {
+    address = frameData.address as string | undefined;
+    if (address) addressSource = 'frameData';
+  }
+
+  if (!address && typeof verified === 'object' && verified !== null) {
+    address = (verified as any).ethAddress || (verified as any).address;
+    if (address) addressSource = 'verified object';
   }
 
   console.log(`FID: ${fid}, Address: ${address}, Source: ${addressSource}`);
