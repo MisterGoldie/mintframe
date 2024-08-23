@@ -13,17 +13,41 @@ export const app = new Frog({
 const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
 const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao'
 const POLYGON_CHAIN_ID = 137
+const FARCASTER_API_URL = 'https://api.farcaster.xyz/v2'
 
 const ABI = [
   'function balanceOf(address account) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ]
 
-async function getWalletAddressFromFID(fid: number): Promise<string | null> {
-  // TODO: Implement actual API call to retrieve wallet address
-  // This is a placeholder and should be replaced with actual implementation
-  console.log(`Attempting to get wallet address for FID: ${fid}`);
-  return null; // Return null to simulate no address found
+async function getWalletAddressFromFarcaster(fid: number): Promise<string | null> {
+  const query = `
+    query GetUserByFid($fid: Int!) {
+      user(fid: $fid) {
+        custodyAddress
+      }
+    }
+  `;
+
+  try {
+    const response = await fetch(FARCASTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables: { fid },
+      }),
+    });
+
+    const data = await response.json();
+    return data.data.user.custodyAddress;
+  } catch (error) {
+    console.error('Error fetching wallet address from Farcaster:', error);
+    return null;
+  }
 }
 
 async function getGoldiesBalance(address: string): Promise<string> {
@@ -89,7 +113,7 @@ app.frame('/', (c) => {
 })
 
 app.frame('/check', async (c) => {
-  const { frameData, verified } = c;
+  const { frameData } = c;
   const fid = frameData?.fid as number | undefined;
 
   let address: string | null = null;
@@ -97,7 +121,7 @@ app.frame('/check', async (c) => {
   let balanceDisplay = '';
 
   if (fid) {
-    address = await getWalletAddressFromFID(fid);
+    address = await getWalletAddressFromFarcaster(fid);
   }
 
   if (address) {
@@ -116,7 +140,6 @@ app.frame('/check', async (c) => {
 
   const debugInfo = JSON.stringify({
     frameData,
-    verified,
     fid,
     address,
     balance,
