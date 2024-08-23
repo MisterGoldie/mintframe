@@ -11,7 +11,7 @@ export const app = new Frog({
 })
 
 const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
-const POLYGON_RPC_URL = 'https://polygon-rpc.com'
+const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao'
 const POLYGON_CHAIN_ID = 137
 
 const ABI = [
@@ -19,20 +19,16 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-async function getGoldiesBalance(fid: number): Promise<string> {
+async function getGoldiesBalance(address: string): Promise<string> {
   let errorMessage = '';
   try {
-    console.log(`Attempting to fetch balance for FID: ${fid} on Polygon network`);
+    console.log(`Attempting to fetch balance for address: ${address} on Polygon network`);
     
-    const provider = new ethers.JsonRpcProvider(POLYGON_RPC_URL, POLYGON_CHAIN_ID);
+    const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
     console.log('Polygon provider created');
     
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
     console.log('Contract instance created on Polygon');
-    
-    // Replace fidToAddress with a known address
-    const address = '0x0FB966a06a23211A5dAA089744C532C785e5D26f';
-    console.log(`Using hardcoded address: ${address}`);
     
     const balance = await contract.balanceOf(address);
     console.log(`Raw balance on Polygon: ${balance.toString()}`);
@@ -105,37 +101,30 @@ app.frame('/', (c) => {
   })
 })
 
-app.frame('/connect', (c) => {
-  return c.res({
-    image: (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
-
-      </div>
-    ),
-    intents: [
-      <Button action="/">Back</Button>,
-      <Button action="/check">Check Balance</Button>
-    ]
-  })
-})
-
 app.frame('/check', async (c) => {
   const { frameData, verified } = c;
   const fid = frameData?.fid as number | undefined;
   const fidSource = fid ? 'frameData.fid' : 'Not found';
 
-  let balance = 'N/A';
-  if (fid !== undefined) {
-    balance = await getGoldiesBalance(fid);
+  let address: string | undefined;
+  if (typeof verified === 'object' && verified !== null) {
+    address = (verified as any).walletAddress || (verified as any).address || (verified as any).custody;
   }
 
+  let balance = 'N/A';
   let balanceDisplay = '';
-  if (balance === '0.00') {
-    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
-  } else if (!balance.startsWith('Error')) {
-    balanceDisplay = `${balance} $GOLDIES on Polygon`;
+
+  if (address) {
+    balance = await getGoldiesBalance(address);
+    if (balance === '0.00') {
+      balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
+    } else if (!balance.startsWith('Error')) {
+      balanceDisplay = `${balance} $GOLDIES on Polygon`;
+    } else {
+      balanceDisplay = balance;
+    }
   } else {
-    balanceDisplay = balance;
+    balanceDisplay = 'No connected Ethereum address found';
   }
 
   const debugInfo = JSON.stringify({
@@ -143,6 +132,7 @@ app.frame('/check', async (c) => {
     verified,
     fidSource,
     fid,
+    address,
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
@@ -152,9 +142,9 @@ app.frame('/check', async (c) => {
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance on Polygon</h1>
-        <p style={{ fontSize: '36px', textAlign: 'center' }}>{fid !== undefined ? balanceDisplay : 'No connected Farcaster account found'}</p>
+        <p style={{ fontSize: '36px', textAlign: 'center' }}>{address ? balanceDisplay : 'No connected Ethereum address found'}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>FID Source: {fidSource}</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
@@ -164,8 +154,7 @@ app.frame('/check', async (c) => {
     intents: [
       <Button action="/">Back</Button>,
       <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-      <Button action="/check">Refresh Balance</Button>,
-      fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null
+      <Button action="/check">Refresh Balance</Button>
     ]
   });
 });
