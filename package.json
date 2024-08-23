@@ -8,6 +8,7 @@
     "deploy": "vercel"
   },
   "dependencies": {
+    "@coinbase/onchainkit": "^0.30.0",
     "@ensdomains/ensjs": "^4.0.0",
     "@farcaster/auth-kit": "^0.6.0",
     "@farcaster/core": "^0.15.1",
