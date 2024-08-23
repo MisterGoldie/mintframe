@@ -19,6 +19,13 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
+async function getWalletAddressFromFID(fid: number): Promise<string | null> {
+  // TODO: Implement actual API call to retrieve wallet address
+  // This is a placeholder and should be replaced with actual implementation
+  console.log(`Attempting to get wallet address for FID: ${fid}`);
+  return null; // Return null to simulate no address found
+}
+
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
@@ -85,15 +92,12 @@ app.frame('/check', async (c) => {
   const { frameData, verified } = c;
   const fid = frameData?.fid as number | undefined;
 
-  let address: string | undefined;
+  let address: string | null = null;
   let balance = 'N/A';
   let balanceDisplay = '';
 
-  // Try to get the actual wallet address
-  if (typeof verified === 'object' && verified !== null) {
-    address = (verified as any).interactor?.verified_accounts?.[0] || 
-              (verified as any).walletAddress ||
-              (verified as any).ethAddress;
+  if (fid) {
+    address = await getWalletAddressFromFID(fid);
   }
 
   if (address) {
@@ -107,7 +111,7 @@ app.frame('/check', async (c) => {
       balanceDisplay = balance;
     }
   } else {
-    balanceDisplay = 'No wallet address found';
+    balanceDisplay = 'Unable to retrieve wallet address. Please ensure your wallet is connected to Farcaster.';
   }
 
   const debugInfo = JSON.stringify({
