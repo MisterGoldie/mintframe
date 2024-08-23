@@ -17,101 +17,63 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ];
 
-async function getGoldiesBalance(address: string): Promise<{ balance: string, timestamp: string }> {
+async function getGoldiesBalance(address: string): Promise<string> {
   try {
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
-
+    
     const balance = await contract.balanceOf(address);
     const decimals = await contract.decimals();
-
+    
     const formattedBalance = ethers.formatUnits(balance, decimals);
-    const timestamp = new Date().toISOString();
-
-    return { balance: Number(formattedBalance).toFixed(2), timestamp };
+    
+    return Number(formattedBalance).toFixed(2);
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error);
-    return { balance: 'Error: Unable to fetch balance', timestamp: new Date().toISOString() };
+    return 'Error: Unable to fetch balance';
   }
 }
 
 app.frame('/', (c) => {
   const { frameData, status } = c;
   const errorMessage = status === 'response' ? frameData?.inputText : null;
-
+  
   return c.res({
     image: (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#FF8B19',
-          padding: '20px',
-          boxSizing: 'border-box',
-        }}
-      >
-        <h1 style={{ fontSize: '60px', marginBottom: '20px', textAlign: 'center' }}>
-          $GOLDIES Balance Checker
-        </h1>
-        <p style={{ fontSize: '36px', marginBottom: '20px', textAlign: 'center' }}>
-          Enter your Polygon address
-        </p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
+        <h1 style={{ fontSize: '60px', marginBottom: '20px', textAlign: 'center' }}>$GOLDIES Balance Checker</h1>
+        <p style={{ fontSize: '36px', marginBottom: '20px', textAlign: 'center' }}>Enter your Polygon address</p>
         {errorMessage && (
-          <p style={{ fontSize: '18px', color: 'red', marginBottom: '20px', textAlign: 'center' }}>
-            {errorMessage}
-          </p>
+          <p style={{ fontSize: '18px', color: 'red', marginBottom: '20px', textAlign: 'center' }}>{errorMessage}</p>
         )}
       </div>
     ),
     intents: [
       <TextInput placeholder="Enter your Polygon address" />,
       <Button action="/check">Check Balance</Button>,
-    ],
+    ]
   });
 });
 
 app.frame('/check', async (c) => {
   const { frameData } = c;
-  let address = frameData?.inputText;
-
-  // If no address is provided in inputText, check if it's in the query parameters (for refresh)
-  if (!address) {
-    address = c.req.query('inputText');
-  }
+  const address = frameData?.inputText;
 
   if (!address || !ethers.isAddress(address)) {
     return c.res({
       image: (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#FF8B19',
-            padding: '20px',
-            boxSizing: 'border-box',
-          }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
           <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Error</h1>
-          <p style={{ fontSize: '36px', textAlign: 'center' }}>
-            Invalid Polygon address. Please enter a valid address.
-          </p>
+          <p style={{ fontSize: '36px', textAlign: 'center' }}>Invalid Polygon address. Please enter a valid address.</p>
         </div>
       ),
       intents: [
-        <Button action="/">Back</Button>,
-      ],
+        <Button action="/">Back</Button>
+      ]
     });
   }
 
-  let { balance, timestamp } = await getGoldiesBalance(address);
+  let balance = await getGoldiesBalance(address);
   let balanceDisplay = '';
 
   if (balance === '0.00') {
@@ -122,43 +84,19 @@ app.frame('/check', async (c) => {
     balanceDisplay = balance;
   }
 
-  const formattedTimestamp = new Date(timestamp).toLocaleString();
-
   return c.res({
     image: (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#FF8B19',
-          padding: '20px',
-          boxSizing: 'border-box',
-        }}
-      >
-        <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>
-          Your $GOLDIES Balance
-        </h1>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
+        <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
-        <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>
-          Address: {address}
-        </p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>
-          Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})
-        </p>
-        <p style={{ fontSize: '18px', marginTop: '10px', textAlign: 'center' }}>
-          Last updated: {formattedTimestamp}
-        </p>
+        <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
       </div>
     ),
     intents: [
       <Button action="/">Back</Button>,
-      <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-      <Button action={`/check?inputText=${address}`}>Refresh Balance</Button>,
-    ],
+      <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>
+    ]
   });
 });
 
