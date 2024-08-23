@@ -98,20 +98,10 @@ app.frame('/check', async (c) => {
 
   const fid = frameData?.fid as number | undefined;
   let address: string | undefined;
-  let addressSource: string = 'Not available';
 
-  // Try to extract address from frameData or verified object
-  if (typeof frameData === 'object' && frameData !== null) {
-    address = frameData.address as string | undefined;
-    if (address) addressSource = 'frameData';
+  if (typeof verified === 'object' && verified !== null) {
+    address = (verified as any).eth_address || (verified as any).address;
   }
-
-  if (!address && typeof verified === 'object' && verified !== null) {
-    address = (verified as any).ethAddress || (verified as any).address;
-    if (address) addressSource = 'verified object';
-  }
-
-  console.log(`FID: ${fid}, Address: ${address}, Source: ${addressSource}`);
 
   let balance = 'N/A';
   let balanceDisplay = '';
@@ -135,7 +125,6 @@ app.frame('/check', async (c) => {
     verified,
     fid,
     address,
-    addressSource,
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
@@ -148,7 +137,6 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
-        <p style={{ fontSize: '18px', marginTop: '5px', textAlign: 'center' }}>Address Source: {addressSource}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>

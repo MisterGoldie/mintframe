@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@farcaster/auth-kit": "^0.6.0",
+    "@farcaster/core": "^0.15.1",
     "@farcaster/hub-nodejs": "^0.12.1",
     "ethers": "^6.13.2",
     "frog": "latest",
