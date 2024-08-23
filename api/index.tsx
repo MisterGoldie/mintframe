@@ -19,10 +19,6 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-function fidToAddress(fid: number): string {
-  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
-}
-
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
@@ -86,15 +82,21 @@ app.frame('/', (c) => {
 })
 
 app.frame('/check', async (c) => {
-  const { frameData } = c;
+  const { frameData, verified } = c;
   const fid = frameData?.fid as number | undefined;
 
   let address: string | undefined;
   let balance = 'N/A';
   let balanceDisplay = '';
 
-  if (fid) {
-    address = fidToAddress(fid);
+  // Try to get the actual wallet address
+  if (typeof verified === 'object' && verified !== null) {
+    address = (verified as any).interactor?.verified_accounts?.[0] || 
+              (verified as any).walletAddress ||
+              (verified as any).ethAddress;
+  }
+
+  if (address) {
     balance = await getGoldiesBalance(address);
     
     if (balance === '0.00') {
@@ -105,11 +107,12 @@ app.frame('/check', async (c) => {
       balanceDisplay = balance;
     }
   } else {
-    balanceDisplay = 'No Farcaster ID found';
+    balanceDisplay = 'No wallet address found';
   }
 
   const debugInfo = JSON.stringify({
     frameData,
+    verified,
     fid,
     address,
     balance,
@@ -124,10 +127,6 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
-        <p style={{ fontSize: '18px', marginTop: '10px', textAlign: 'center' }}>Address Source: derived from FID</p>
-        <p style={{ fontSize: '16px', marginTop: '10px', textAlign: 'center', color: '#FF4500' }}>
-          Note: This address is derived from your Farcaster ID and may not represent your actual wallet.
-        </p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
