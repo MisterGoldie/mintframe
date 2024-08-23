@@ -2,6 +2,8 @@ import { Button, Frog } from 'frog'
 import { handle } from 'frog/vercel'
 import { ethers } from 'ethers'
 
+const DEBUG = false; // Set to true to show debug info
+
 export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
