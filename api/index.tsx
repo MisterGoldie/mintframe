@@ -35,16 +35,22 @@ async function getGoldiesBalance(address: string): Promise<string> {
   }
 }
 
-async function getGoldiesPrice(): Promise<number> {
+async function getGoldiesPrice(): Promise<number | null> {
   try {
     const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
     const data = await response.json()
 
-    const priceUSD = parseFloat(data.pair.priceUsd)
-    return priceUSD
+    if (data.pair && data.pair.priceUsd) {
+      const priceUSD = parseFloat(data.pair.priceUsd)
+      console.log('Fetched $GOLDIES price:', priceUSD)
+      return priceUSD
+    } else {
+      console.error('Invalid price data received:', data)
+      return null
+    }
   } catch (error) {
     console.error('Error in getGoldiesPrice:', error)
-    return 0
+    return null
   }
 }
 
@@ -89,14 +95,22 @@ app.frame('/check', async (c) => {
 
   const balance = await getGoldiesBalance(address)
   const priceUSD = await getGoldiesPrice()
-  const usdValue = (parseFloat(balance) * priceUSD).toFixed(8)  // Changed to 8 decimal places
 
   let balanceDisplay = ''
+  let usdValueDisplay = ''
 
   if (balance === '0.00') {
     balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
   } else if (!balance.startsWith('Error')) {
-    balanceDisplay = `${Number(balance).toLocaleString()} $GOLDIES on Polygon (~$${usdValue} USD)`
+    const balanceNumber = parseFloat(balance)
+    balanceDisplay = `${balanceNumber.toLocaleString()} $GOLDIES on Polygon`
+    
+    if (priceUSD !== null) {
+      const usdValue = balanceNumber * priceUSD
+      usdValueDisplay = `(~$${usdValue.toFixed(8)} USD)`
+    } else {
+      usdValueDisplay = "(USD value unavailable)"
+    }
   } else {
     balanceDisplay = balance
   }
@@ -106,6 +120,7 @@ app.frame('/check', async (c) => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
+        <p style={{ fontSize: '30px', textAlign: 'center' }}>{usdValueDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
       </div>
