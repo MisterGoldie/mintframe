@@ -1,42 +1,56 @@
-import { Button, Frog, TextInput } from 'frog';
-import { handle } from 'frog/vercel';
-import { ethers } from 'ethers';
+import { Button, Frog, TextInput } from 'frog'
+import { handle } from 'frog/vercel'
+import { ethers } from 'ethers'
+import fetch from 'node-fetch'
 
 export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
   title: '$GOLDIES Token Tracker on Polygon',
-});
+})
 
-const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e';
-const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao';
-const POLYGON_CHAIN_ID = 137;
+const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
+const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao'
+const POLYGON_CHAIN_ID = 137
 
 const ABI = [
   'function balanceOf(address account) view returns (uint256)',
   'function decimals() view returns (uint8)',
-];
+]
 
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
-    const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
-    const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
+    const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID)
+    const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider)
     
-    const balance = await contract.balanceOf(address);
-    const decimals = await contract.decimals();
+    const balance = await contract.balanceOf(address)
+    const decimals = await contract.decimals()
     
-    const formattedBalance = ethers.formatUnits(balance, decimals);
+    const formattedBalance = ethers.formatUnits(balance, decimals)
     
-    return Number(formattedBalance).toFixed(2);
+    return Number(formattedBalance).toFixed(2)
   } catch (error) {
-    console.error('Error in getGoldiesBalance:', error);
-    return 'Error: Unable to fetch balance';
+    console.error('Error in getGoldiesBalance:', error)
+    return 'Error: Unable to fetch balance'
+  }
+}
+
+async function getGoldiesPrice(): Promise<number> {
+  try {
+    const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
+    const data = await response.json()
+
+    const priceUSD = parseFloat(data.pair.priceUsd)
+    return priceUSD
+  } catch (error) {
+    console.error('Error in getGoldiesPrice:', error)
+    return 0
   }
 }
 
 app.frame('/', (c) => {
-  const { frameData, status } = c;
-  const errorMessage = status === 'response' ? frameData?.inputText : null;
+  const { frameData, status } = c
+  const errorMessage = status === 'response' ? frameData?.inputText : null
   
   return c.res({
     image: (
@@ -52,12 +66,12 @@ app.frame('/', (c) => {
       <TextInput placeholder="Enter your Polygon address" />,
       <Button action="/check">Check Balance</Button>,
     ]
-  });
-});
+  })
+})
 
 app.frame('/check', async (c) => {
-  const { frameData } = c;
-  const address = frameData?.inputText;
+  const { frameData } = c
+  const address = frameData?.inputText
 
   if (!address || !ethers.isAddress(address)) {
     return c.res({
@@ -70,18 +84,21 @@ app.frame('/check', async (c) => {
       intents: [
         <Button action="/">Back</Button>
       ]
-    });
+    })
   }
 
-  let balance = await getGoldiesBalance(address);
-  let balanceDisplay = '';
+  const balance = await getGoldiesBalance(address)
+  const priceUSD = await getGoldiesPrice()
+  const usdValue = (parseFloat(balance) * priceUSD).toFixed(2)
+
+  let balanceDisplay = ''
 
   if (balance === '0.00') {
-    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
+    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
   } else if (!balance.startsWith('Error')) {
-    balanceDisplay = `${Number(balance).toLocaleString()} $GOLDIES on Polygon`;
+    balanceDisplay = `${Number(balance).toLocaleString()} $GOLDIES on Polygon (~$${usdValue} USD)`
   } else {
-    balanceDisplay = balance;
+    balanceDisplay = balance
   }
 
   return c.res({
@@ -95,10 +112,10 @@ app.frame('/check', async (c) => {
     ),
     intents: [
       <Button action="/">Back</Button>,
-      <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>
+      <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
     ]
-  });
-});
+  })
+})
 
-export const GET = handle(app);
-export const POST = handle(app);
+export const GET = handle(app)
+export const POST = handle(app)
