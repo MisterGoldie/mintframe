@@ -13,7 +13,6 @@ export const app = new Frog({
 const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
 const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao'
 const POLYGON_CHAIN_ID = 137
-const FALLBACK_ADDRESS = '0xB57381C7eD83BB9031a786d2C691cc6C7C2207a4' // Your hardcoded wallet address
 
 const ABI = [
   'function balanceOf(address account) view returns (uint256)',
@@ -97,18 +96,24 @@ app.frame('/check', async (c) => {
   console.log('Frame Data:', JSON.stringify(frameData, null, 2))
 
   const fid = frameData?.fid as number | undefined
-  let address: string
+  const address = frameData?.address
   let addressSource: string
 
-  if (fid) {
-    // For now, use the fallback address even when FID is available
-    address = FALLBACK_ADDRESS
-    addressSource = 'Fallback address (temporary solution)'
-  } else {
-    address = FALLBACK_ADDRESS
-    addressSource = 'Fallback hardcoded address'
+  if (!address) {
+    return c.res({
+      image: (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
+          <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Error</h1>
+          <p style={{ fontSize: '36px', textAlign: 'center' }}>Unable to retrieve your Ethereum address. Please ensure your wallet is connected to Farcaster.</p>
+        </div>
+      ),
+      intents: [
+        <Button action="/">Back</Button>
+      ]
+    })
   }
 
+  addressSource = 'Farcaster API'
   console.log(`FID: ${fid}, Address: ${address}, Source: ${addressSource}`)
 
   let balance = await getGoldiesBalance(address)
@@ -117,7 +122,7 @@ app.frame('/check', async (c) => {
   if (balance === '0.00') {
     balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
   } else if (!balance.startsWith('Error')) {
-    balanceDisplay = `${balance} $GOLDIES on Polygon`
+    balanceDisplay = `${Number(balance).toLocaleString()} $GOLDIES on Polygon`
   } else {
     balanceDisplay = balance
   }
