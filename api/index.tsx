@@ -111,7 +111,7 @@ app.frame('/check', async (c) => {
   const fidSource = fid ? 'frameData.fid' : 'Not found';
 
   let address: string | undefined;
-  let addressSource = 'Not available'; // Initialize with a default value
+  let addressSource = 'Not available';
 
   if (typeof verified === 'object' && verified !== null) {
     address = (verified as any).walletAddress || (verified as any).address || (verified as any).custody;
@@ -157,7 +157,13 @@ app.frame('/check', async (c) => {
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance on Polygon</h1>
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{address ? balanceDisplay : 'No connected Ethereum address found'}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'} ({addressSource})</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
+        <p style={{ fontSize: '18px', marginTop: '10px', textAlign: 'center' }}>Address Source: {addressSource}</p>
+        {addressSource === 'derived from FID' && (
+          <p style={{ fontSize: '16px', marginTop: '10px', textAlign: 'center', color: '#FF4500' }}>
+            Note: This address is derived from your Farcaster ID and may not represent your actual wallet.
+          </p>
+        )}
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
@@ -167,7 +173,23 @@ app.frame('/check', async (c) => {
     intents: [
       <Button action="/">Back</Button>,
       <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-      <Button action="/check">Refresh Balance</Button>
+      <Button action="/check">Refresh Balance</Button>,
+      <Button action="/manual">Enter Address Manually</Button>
+    ]
+  });
+});
+
+app.frame('/manual', (c) => {
+  return c.res({
+    image: (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
+        <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Enter Ethereum Address</h1>
+        <p style={{ fontSize: '24px', textAlign: 'center' }}>Please enter an Ethereum address to check its $GOLDIES balance on Polygon.</p>
+      </div>
+    ),
+    intents: [
+      <Button action="/">Back</Button>,
+      <Button action="/check" value="INPUT">Check Balance</Button>
     ]
   });
 });
