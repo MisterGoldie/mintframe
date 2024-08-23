@@ -54,14 +54,14 @@ app.frame('/', (c) => {
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>$GOLDIES Balance Checker</h1>
-        <p style={{ fontSize: '24px', marginBottom: '20px', textAlign: 'center' }}>Enter your Ethereum address to check your $GOLDIES balance on Polygon</p>
+        <p style={{ fontSize: '24px', marginBottom: '20px', textAlign: 'center' }}>Enter your Polygon address to check your $GOLDIES balance</p>
         {errorMessage && (
           <p style={{ fontSize: '18px', color: 'red', marginBottom: '20px', textAlign: 'center' }}>{errorMessage}</p>
         )}
       </div>
     ),
     intents: [
-      <TextInput placeholder="Enter your Ethereum address" />,
+      <TextInput placeholder="Enter your Polygon address" />,
       <Button action="/check">Check Balance</Button>,
     ]
   })
@@ -76,7 +76,7 @@ app.frame('/check', async (c) => {
       image: (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
           <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Error</h1>
-          <p style={{ fontSize: '24px', textAlign: 'center' }}>Invalid Ethereum address. Please enter a valid address.</p>
+          <p style={{ fontSize: '24px', textAlign: 'center' }}>Invalid Polygon address. Please enter a valid address.</p>
         </div>
       ),
       intents: [
