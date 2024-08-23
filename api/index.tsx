@@ -2,7 +2,7 @@ import { Button, Frog } from 'frog';
 import { handle } from 'frog/vercel';
 import { ethers } from 'ethers';
 
-const DEBUG = true; // Set to true to show debug info
+const DEBUG = true; // Set to false in production
 
 export const app = new Frog({
   basePath: '/api',
@@ -19,29 +19,27 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ];
 
+// List of all $GOLDIES token holders
+// This list should be updated periodically to reflect the current state of the contract
+const GOLDIES_HOLDERS = [
+  '0xB57381C7eD83BB9031a786d2C691cc6C7C2207a4',
+  '0x0FB966a06a23211A5dAA089744C532C785e5D26f',
+  '0x123456789abcdef123456789abcdef123456789a',
+  // Add all other holder addresses here
+];
+
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
-    console.log(`Attempting to fetch balance for address: ${address}`);
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
-    console.log('Provider created');
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
-    console.log('Contract instance created');
     
     const balance = await contract.balanceOf(address);
-    console.log(`Raw balance: ${balance.toString()}`);
-    
     const decimals = await contract.decimals();
-    console.log(`Decimals: ${decimals}`);
     
     const formattedBalance = ethers.formatUnits(balance, decimals);
-    console.log(`Formatted balance: ${formattedBalance}`);
-    
     return Number(formattedBalance).toFixed(2);
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error);
-    if (error instanceof Error) {
-      return `Error: ${error.message}`;
-    }
     return 'Error: Unable to fetch balance';
   }
 }
@@ -96,9 +94,7 @@ app.frame('/check', async (c) => {
   console.log('Frame Data:', JSON.stringify(frameData, null, 2));
   console.log('Verified:', JSON.stringify(verified, null, 2));
 
-  const fid = frameData?.fid as number | undefined;
   let address: string | undefined;
-
   if (typeof verified === 'object' && verified !== null) {
     address = (verified as any).eth_address || (verified as any).address;
   }
@@ -106,7 +102,7 @@ app.frame('/check', async (c) => {
   let balance = 'N/A';
   let balanceDisplay = '';
 
-  if (address) {
+  if (address && GOLDIES_HOLDERS.includes(address.toLowerCase())) {
     balance = await getGoldiesBalance(address);
     
     if (balance === '0.00') {
@@ -116,6 +112,8 @@ app.frame('/check', async (c) => {
     } else {
       balanceDisplay = balance;
     }
+  } else if (address) {
+    balanceDisplay = "This address is not a $GOLDIES token holder.";
   } else {
     balanceDisplay = 'Unable to retrieve wallet address. Please ensure your wallet is connected to Farcaster.';
   }
@@ -123,8 +121,8 @@ app.frame('/check', async (c) => {
   const debugInfo = JSON.stringify({
     frameData,
     verified,
-    fid,
     address,
+    isHolder: address ? GOLDIES_HOLDERS.includes(address.toLowerCase()) : false,
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
@@ -135,8 +133,7 @@ app.frame('/check', async (c) => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance on Polygon</h1>
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
-        <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
+        <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
