@@ -17,7 +17,7 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ];
 
-async function getGoldiesBalance(address: string): Promise<string> {
+async function getGoldiesBalance(address: string): Promise<{ balance: string, timestamp: string }> {
   try {
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
@@ -26,11 +26,12 @@ async function getGoldiesBalance(address: string): Promise<string> {
     const decimals = await contract.decimals();
 
     const formattedBalance = ethers.formatUnits(balance, decimals);
+    const timestamp = new Date().toISOString();
 
-    return Number(formattedBalance).toFixed(2);
+    return { balance: Number(formattedBalance).toFixed(2), timestamp };
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error);
-    return 'Error: Unable to fetch balance';
+    return { balance: 'Error: Unable to fetch balance', timestamp: new Date().toISOString() };
   }
 }
 
@@ -75,7 +76,12 @@ app.frame('/', (c) => {
 
 app.frame('/check', async (c) => {
   const { frameData } = c;
-  const address = frameData?.inputText;
+  let address = frameData?.inputText;
+
+  // If no address is provided in inputText, check if it's in the query parameters (for refresh)
+  if (!address) {
+    address = c.req.query('inputText');
+  }
 
   if (!address || !ethers.isAddress(address)) {
     return c.res({
@@ -105,7 +111,7 @@ app.frame('/check', async (c) => {
     });
   }
 
-  let balance = await getGoldiesBalance(address);
+  let { balance, timestamp } = await getGoldiesBalance(address);
   let balanceDisplay = '';
 
   if (balance === '0.00') {
@@ -115,6 +121,8 @@ app.frame('/check', async (c) => {
   } else {
     balanceDisplay = balance;
   }
+
+  const formattedTimestamp = new Date(timestamp).toLocaleString();
 
   return c.res({
     image: (
@@ -141,12 +149,15 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>
           Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})
         </p>
+        <p style={{ fontSize: '18px', marginTop: '10px', textAlign: 'center' }}>
+          Last updated: {formattedTimestamp}
+        </p>
       </div>
     ),
     intents: [
       <Button action="/">Back</Button>,
       <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-      <Button action={`/check?inputText=${address}`}>Refresh Balance</Button>, // Ensuring the address is passed again
+      <Button action={`/check?inputText=${address}`}>Refresh Balance</Button>,
     ],
   });
 });
