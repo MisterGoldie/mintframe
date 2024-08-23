@@ -35,26 +35,26 @@ async function getGoldiesBalance(address: string): Promise<string> {
   }
 }
 
-async function getGoldiesMaticPrice(): Promise<number | null> {
+async function getGoldiesUsdPrice(): Promise<number | null> {
   try {
     console.log('Fetching $GOLDIES price from DEX Screener...')
     const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
     const data = await response.json()
     console.log('DEX Screener API response:', JSON.stringify(data, null, 2))
 
-    if (data.pair && data.pair.priceNative) {
-      const priceInMatic = 1 / parseFloat(data.pair.priceNative)
-      console.log('Calculated $GOLDIES price in MATIC:', priceInMatic)
-      return priceInMatic
+    if (data.pair && data.pair.priceUsd) {
+      const priceUsd = parseFloat(data.pair.priceUsd)
+      console.log('Fetched $GOLDIES price in USD:', priceUsd)
+      return priceUsd
     } else {
       console.error('Invalid price data received from DEX Screener')
       // Fallback to a hardcoded approximation (you may want to update this value periodically)
-      const fallbackPrice = 0.000001 // 1 GOLDIES = 0.000001 MATIC (example value)
+      const fallbackPrice = 0.000001 // 1 GOLDIES = $0.000001 USD (example value)
       console.log('Using fallback price:', fallbackPrice)
       return fallbackPrice
     }
   } catch (error) {
-    console.error('Error in getGoldiesMaticPrice:', error)
+    console.error('Error in getGoldiesUsdPrice:', error)
     return null
   }
 }
@@ -99,10 +99,10 @@ app.frame('/check', async (c) => {
   }
 
   const balance = await getGoldiesBalance(address)
-  const priceInMatic = await getGoldiesMaticPrice()
+  const priceUsd = await getGoldiesUsdPrice()
 
   let balanceDisplay = ''
-  let maticValueDisplay = ''
+  let usdValueDisplay = ''
 
   if (balance === '0.00') {
     balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
@@ -110,15 +110,15 @@ app.frame('/check', async (c) => {
     const balanceNumber = parseFloat(balance)
     balanceDisplay = `${balanceNumber.toLocaleString()} $GOLDIES on Polygon`
     
-    if (priceInMatic !== null) {
-      const maticValue = balanceNumber * priceInMatic
-      maticValueDisplay = `(~${maticValue.toFixed(8)} MATIC)`
+    if (priceUsd !== null) {
+      const usdValue = balanceNumber * priceUsd
+      usdValueDisplay = `(~$${usdValue.toFixed(8)} USD)`
     } else {
-      maticValueDisplay = "(MATIC value calculation error)"
+      usdValueDisplay = "(USD value calculation error)"
     }
   } else {
     balanceDisplay = balance
-    maticValueDisplay = "Unable to calculate MATIC value"
+    usdValueDisplay = "Unable to calculate USD value"
   }
 
   return c.res({
@@ -126,7 +126,7 @@ app.frame('/check', async (c) => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
-        <p style={{ fontSize: '30px', textAlign: 'center' }}>{maticValueDisplay}</p>
+        <p style={{ fontSize: '30px', textAlign: 'center' }}>{usdValueDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
       </div>
