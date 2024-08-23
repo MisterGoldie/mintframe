@@ -24,39 +24,19 @@ function fidToAddress(fid: number): string {
 }
 
 async function getGoldiesBalance(address: string): Promise<string> {
-  let errorMessage = '';
   try {
-    console.log(`Attempting to fetch balance for address: ${address} on Polygon network`);
-    
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
-    console.log('Polygon provider created');
-    
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
-    console.log('Contract instance created on Polygon');
     
     const balance = await contract.balanceOf(address);
-    console.log(`Raw balance on Polygon: ${balance.toString()}`);
-    
     const decimals = await contract.decimals();
-    console.log(`Decimals: ${decimals}`);
     
     const formattedBalance = ethers.formatUnits(balance, decimals);
-    console.log(`Formatted balance on Polygon: ${formattedBalance}`);
     
     return Number(formattedBalance).toFixed(2);
   } catch (error) {
-    console.error('Error in getGoldiesBalance on Polygon:', error);
-    if (error instanceof Error) {
-      errorMessage = error.message;
-      if (error.message.includes('CALL_EXCEPTION')) {
-        errorMessage = 'Contract call failed on Polygon. The balance may not be available for this address.';
-      }
-    } else {
-      errorMessage = 'Unknown error on Polygon network';
-    }
-    return `Error on Polygon: ${errorMessage}`;
-  } finally {
-    console.log(`Balance fetch attempt completed on Polygon. Error: ${errorMessage}`);
+    console.error('Error in getGoldiesBalance:', error);
+    return 'Error: Unable to fetch balance';
   }
 }
 
@@ -106,28 +86,17 @@ app.frame('/', (c) => {
 })
 
 app.frame('/check', async (c) => {
-  const { frameData, verified } = c;
+  const { frameData } = c;
   const fid = frameData?.fid as number | undefined;
-  const fidSource = fid ? 'frameData.fid' : 'Not found';
 
   let address: string | undefined;
-  let addressSource = 'Not available';
-
-  if (typeof verified === 'object' && verified !== null) {
-    address = (verified as any).walletAddress || (verified as any).address || (verified as any).custody;
-    if (address) addressSource = 'verified object';
-  }
-
-  if (!address && fid) {
-    address = fidToAddress(fid);
-    addressSource = 'derived from FID';
-  }
-
   let balance = 'N/A';
   let balanceDisplay = '';
 
-  if (address) {
+  if (fid) {
+    address = fidToAddress(fid);
     balance = await getGoldiesBalance(address);
+    
     if (balance === '0.00') {
       balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
     } else if (!balance.startsWith('Error')) {
@@ -136,16 +105,13 @@ app.frame('/check', async (c) => {
       balanceDisplay = balance;
     }
   } else {
-    balanceDisplay = 'No connected Ethereum address found';
+    balanceDisplay = 'No Farcaster ID found';
   }
 
   const debugInfo = JSON.stringify({
     frameData,
-    verified,
-    fidSource,
     fid,
     address,
-    addressSource,
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
@@ -155,15 +121,13 @@ app.frame('/check', async (c) => {
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance on Polygon</h1>
-        <p style={{ fontSize: '36px', textAlign: 'center' }}>{address ? balanceDisplay : 'No connected Ethereum address found'}</p>
+        <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
-        <p style={{ fontSize: '18px', marginTop: '10px', textAlign: 'center' }}>Address Source: {addressSource}</p>
-        {addressSource === 'derived from FID' && (
-          <p style={{ fontSize: '16px', marginTop: '10px', textAlign: 'center', color: '#FF4500' }}>
-            Note: This address is derived from your Farcaster ID and may not represent your actual wallet.
-          </p>
-        )}
+        <p style={{ fontSize: '18px', marginTop: '10px', textAlign: 'center' }}>Address Source: derived from FID</p>
+        <p style={{ fontSize: '16px', marginTop: '10px', textAlign: 'center', color: '#FF4500' }}>
+          Note: This address is derived from your Farcaster ID and may not represent your actual wallet.
+        </p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
@@ -173,23 +137,7 @@ app.frame('/check', async (c) => {
     intents: [
       <Button action="/">Back</Button>,
       <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-      <Button action="/check">Refresh Balance</Button>,
-      <Button action="/manual">Enter Address Manually</Button>
-    ]
-  });
-});
-
-app.frame('/manual', (c) => {
-  return c.res({
-    image: (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
-        <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Enter Ethereum Address</h1>
-        <p style={{ fontSize: '24px', textAlign: 'center' }}>Please enter an Ethereum address to check its $GOLDIES balance on Polygon.</p>
-      </div>
-    ),
-    intents: [
-      <Button action="/">Back</Button>,
-      <Button action="/check" value="INPUT">Check Balance</Button>
+      <Button action="/check">Refresh Balance</Button>
     ]
   });
 });
