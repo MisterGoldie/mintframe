@@ -146,12 +146,12 @@ app.frame('/check', async (c) => {
     return c.res({
       image: (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
-          <h1 style={{ fontSize: '56px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
-          <p style={{ fontSize: '40px', textAlign: 'center' }}>{balanceDisplay}</p>
-          <p style={{ fontSize: '40px', textAlign: 'center' }}>{usdValueDisplay}</p>
-          <p style={{ fontSize: '30px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
-          <p style={{ fontSize: '30px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
-          <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Price: ${priceUsd.toFixed(8)} USD</p>
+          <h1 style={{ fontSize: '60px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
+          <p style={{ fontSize: '42px', textAlign: 'center' }}>{balanceDisplay}</p>
+          <p style={{ fontSize: '42px', textAlign: 'center' }}>{usdValueDisplay}</p>
+          <p style={{ fontSize: '32px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
+          <p style={{ fontSize: '32px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
+          <p style={{ fontSize: '26px', marginTop: '10px', textAlign: 'center' }}>Price: ${priceUsd.toFixed(8)} USD</p>
         </div>
       ),
       intents: [
