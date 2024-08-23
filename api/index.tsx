@@ -19,29 +19,6 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-async function resolveAddress(input: string): Promise<string | null> {
-  // Check if the input is a valid Ethereum address
-  if (ethers.isAddress(input)) {
-    return input
-  }
-
-  try {
-    // Try to resolve as ENS domain
-    const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID)
-    const ensAddress = await provider.resolveName(input)
-    if (ensAddress) {
-      return ensAddress
-    }
-
-    // Optionally: Resolve as Unstoppable Domain (add the code here if using an Unstoppable Domains library)
-
-    return null
-  } catch (error) {
-    console.error('Error resolving address:', error)
-    return null
-  }
-}
-
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
     console.log('Fetching balance for address:', address)
@@ -113,14 +90,14 @@ app.frame('/', (c) => {
           textAlign: 'center',
           color: 'white',
           textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
-        }}>Enter your Polygon address or domain name</p>
+        }}>Enter your Polygon address</p>
         {errorMessage && (
           <p style={{ fontSize: '18px', color: 'red', marginBottom: '20px', textAlign: 'center' }}>{errorMessage}</p>
         )}
       </div>
     ),
     intents: [
-      <TextInput placeholder="Enter your Polygon address or domain name" />,
+      <TextInput placeholder="Enter your Polygon address" />,
       <Button action="/check">Check Balance</Button>,
     ]
   })
@@ -128,16 +105,14 @@ app.frame('/', (c) => {
 
 app.frame('/check', async (c) => {
   const { frameData } = c
-  const input = frameData?.inputText ?? "" // Provide a default empty string
+  const address = frameData?.inputText
 
-  const address = await resolveAddress(input)
-
-  if (!address) {
+  if (!address || !ethers.isAddress(address)) {
     return c.res({
       image: (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
           <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Error</h1>
-          <p style={{ fontSize: '36px', textAlign: 'center' }}>Invalid Polygon address or domain. Please enter a valid address or domain.</p>
+          <p style={{ fontSize: '36px', textAlign: 'center' }}>Invalid Polygon address. Please enter a valid address.</p>
         </div>
       ),
       intents: [
@@ -191,14 +166,17 @@ app.frame('/check', async (c) => {
       image: (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
           <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Error</h1>
-          <p style={{ fontSize: '36px', textAlign: 'center' }}>{errorMessage}</p>
+          <p style={{ fontSize: '36px', textAlign: 'center' }}>Unable to fetch balance or price. Please try again.</p>
+          <p style={{ fontSize: '24px', textAlign: 'center' }}>Error details: {errorMessage}</p>
         </div>
       ),
       intents: [
-        <Button action="/">Back</Button>
+        <Button action="/">Back</Button>,
+        <Button action="/check">Retry</Button>
       ]
     })
   }
 })
 
-export default handle(app)
+export const GET = handle(app)
+export const POST = handle(app)
