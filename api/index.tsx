@@ -54,6 +54,10 @@ type VerifiedData = {
   // other properties if necessary
 };
 
+function deriveAddressFromFID(fid: number): string {
+  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`);
+}
+
 app.frame('/', (c) => {
   return c.res({
     image: (
@@ -106,16 +110,20 @@ app.frame('/check', async (c) => {
 
   const fid = frameData?.fid as number | undefined;
   let address: string | undefined;
+  let addressSource: string = 'Not available';
 
-  // Ensure verified is an object before casting
   if (verified && typeof verified === 'object') {
     const verifiedData = verified as VerifiedData;
     address = verifiedData.walletAddress || verifiedData.ethAddress || verifiedData.address;
-  } else {
-    address = undefined;
+    if (address) addressSource = 'Verified data';
   }
 
-  console.log(`FID: ${fid}, Address: ${address}`);
+  if (!address && fid) {
+    address = deriveAddressFromFID(fid);
+    addressSource = 'Derived from FID';
+  }
+
+  console.log(`FID: ${fid}, Address: ${address}, Source: ${addressSource}`);
 
   let balance = 'N/A';
   let balanceDisplay = '';
@@ -131,7 +139,7 @@ app.frame('/check', async (c) => {
       balanceDisplay = balance;
     }
   } else {
-    balanceDisplay = 'Unable to retrieve wallet address. Please ensure your wallet is connected to Farcaster.';
+    balanceDisplay = 'Unable to retrieve or derive wallet address. Please ensure your wallet is connected to Farcaster.';
   }
 
   const debugInfo = JSON.stringify({
@@ -139,6 +147,7 @@ app.frame('/check', async (c) => {
     verified,
     fid,
     address,
+    addressSource,
     balance,
     network: 'Polygon',
     chainId: POLYGON_CHAIN_ID
@@ -151,6 +160,7 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address: {address || 'Not available'}</p>
+        <p style={{ fontSize: '18px', marginTop: '5px', textAlign: 'center' }}>Address Source: {addressSource}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
