@@ -20,10 +20,6 @@ const ABI = [
   'function decimals() view returns (uint8)',
 ]
 
-function fidToAddress(fid: number): string {
-  return ethers.getAddress(`0x${fid.toString(16).padStart(40, '0')}`)
-}
-
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
     console.log(`Attempting to fetch balance for address: ${address}`)
@@ -105,8 +101,9 @@ app.frame('/check', async (c) => {
   let addressSource: string
 
   if (fid) {
-    address = fidToAddress(fid)
-    addressSource = 'Derived from FID'
+    // For now, use the fallback address even when FID is available
+    address = FALLBACK_ADDRESS
+    addressSource = 'Fallback address (temporary solution)'
   } else {
     address = FALLBACK_ADDRESS
     addressSource = 'Fallback hardcoded address'
@@ -141,7 +138,7 @@ app.frame('/check', async (c) => {
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>FID Source: frameData.fid</p>
+        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Address Source: {addressSource}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
         {DEBUG && (
           <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
