@@ -2,7 +2,7 @@ import { Button, Frog } from 'frog'
 import { handle } from 'frog/vercel'
 import { ethers } from 'ethers'
 
-const DEBUG = false; // Set to true to show debug info
+const DEBUG = true; // Set to true to show debug info
 
 export const app = new Frog({
   basePath: '/api',
