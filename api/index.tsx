@@ -35,21 +35,21 @@ async function getGoldiesBalance(address: string): Promise<string> {
   }
 }
 
-async function getGoldiesPrice(): Promise<number | null> {
+async function getGoldiesMaticPrice(): Promise<number | null> {
   try {
     const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
     const data = await response.json()
 
-    if (data.pair && data.pair.priceUsd) {
-      const priceUSD = parseFloat(data.pair.priceUsd)
-      console.log('Fetched $GOLDIES price:', priceUSD)
-      return priceUSD
+    if (data.pair && data.pair.priceNative) {
+      const priceInMatic = 1 / parseFloat(data.pair.priceNative) // Inverse of GOLDIES/MATIC price to get MATIC/GOLDIES
+      console.log('Fetched $GOLDIES price in MATIC:', priceInMatic)
+      return priceInMatic
     } else {
       console.error('Invalid price data received:', data)
       return null
     }
   } catch (error) {
-    console.error('Error in getGoldiesPrice:', error)
+    console.error('Error in getGoldiesMaticPrice:', error)
     return null
   }
 }
@@ -94,10 +94,10 @@ app.frame('/check', async (c) => {
   }
 
   const balance = await getGoldiesBalance(address)
-  const priceUSD = await getGoldiesPrice()
+  const priceInMatic = await getGoldiesMaticPrice()
 
   let balanceDisplay = ''
-  let usdValueDisplay = ''
+  let maticValueDisplay = ''
 
   if (balance === '0.00') {
     balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
@@ -105,11 +105,11 @@ app.frame('/check', async (c) => {
     const balanceNumber = parseFloat(balance)
     balanceDisplay = `${balanceNumber.toLocaleString()} $GOLDIES on Polygon`
     
-    if (priceUSD !== null) {
-      const usdValue = balanceNumber * priceUSD
-      usdValueDisplay = `(~$${usdValue.toFixed(8)} USD)`
+    if (priceInMatic !== null) {
+      const maticValue = balanceNumber * priceInMatic
+      maticValueDisplay = `(~${maticValue.toFixed(8)} MATIC)`
     } else {
-      usdValueDisplay = "(USD value unavailable)"
+      maticValueDisplay = "(MATIC value unavailable)"
     }
   } else {
     balanceDisplay = balance
@@ -120,7 +120,7 @@ app.frame('/check', async (c) => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
-        <p style={{ fontSize: '30px', textAlign: 'center' }}>{usdValueDisplay}</p>
+        <p style={{ fontSize: '30px', textAlign: 'center' }}>{maticValueDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
       </div>
