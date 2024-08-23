@@ -2,8 +2,6 @@ import { Button, Frog, TextInput } from 'frog'
 import { handle } from 'frog/vercel'
 import { ethers } from 'ethers'
 
-const DEBUG = true; // Set to true to show debug info
-
 export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
@@ -21,27 +19,17 @@ const ABI = [
 
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
-    console.log(`Attempting to fetch balance for address: ${address}`)
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID)
-    console.log('Provider created')
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider)
-    console.log('Contract instance created')
     
     const balance = await contract.balanceOf(address)
-    console.log(`Raw balance: ${balance.toString()}`)
-    
     const decimals = await contract.decimals()
-    console.log(`Decimals: ${decimals}`)
     
     const formattedBalance = ethers.formatUnits(balance, decimals)
-    console.log(`Formatted balance: ${formattedBalance}`)
     
     return Number(formattedBalance).toFixed(2)
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error)
-    if (error instanceof Error) {
-      return `Error: ${error.message}`
-    }
     return 'Error: Unable to fetch balance'
   }
 }
@@ -54,14 +42,14 @@ app.frame('/', (c) => {
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
         <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>$GOLDIES Balance Checker</h1>
-        <p style={{ fontSize: '24px', marginBottom: '20px', textAlign: 'center' }}>Enter your Polygon address to check your $GOLDIES balance</p>
+        <p style={{ fontSize: '24px', marginBottom: '20px', textAlign: 'center' }}>Enter your Ethereum address to check your $GOLDIES balance on Polygon</p>
         {errorMessage && (
           <p style={{ fontSize: '18px', color: 'red', marginBottom: '20px', textAlign: 'center' }}>{errorMessage}</p>
         )}
       </div>
     ),
     intents: [
-      <TextInput placeholder="Enter your Polygon address" />,
+      <TextInput placeholder="Enter your Ethereum address" />,
       <Button action="/check">Check Balance</Button>,
     ]
   })
@@ -76,7 +64,7 @@ app.frame('/check', async (c) => {
       image: (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
           <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Error</h1>
-          <p style={{ fontSize: '24px', textAlign: 'center' }}>Invalid Polygon address. Please enter a valid address.</p>
+          <p style={{ fontSize: '24px', textAlign: 'center' }}>Invalid Ethereum address. Please enter a valid address.</p>
         </div>
       ),
       intents: [
@@ -96,14 +84,6 @@ app.frame('/check', async (c) => {
     balanceDisplay = balance
   }
 
-  const debugInfo = JSON.stringify({
-    frameData,
-    address,
-    balance,
-    network: 'Polygon',
-    chainId: POLYGON_CHAIN_ID
-  }, null, 2)
-
   return c.res({
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
@@ -111,9 +91,6 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
-        {DEBUG && (
-          <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
-        )}
       </div>
     ),
     intents: [
