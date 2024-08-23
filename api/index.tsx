@@ -93,7 +93,7 @@ app.frame('/', (c) => {
           fontWeight: 'bold',
           textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
         }}>
-          Check Your $GOLDIES Balance on Polygon
+          Check Your $GOLDIES balance
         </h1>
       </div>
     ),
