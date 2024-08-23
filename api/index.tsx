@@ -48,13 +48,11 @@ async function getGoldiesUsdPrice(): Promise<number> {
       return priceUsd
     } else {
       console.error('Invalid price data received from DEX Screener')
-      const fallbackPrice = 0.00007442
-      console.log('Using fallback price:', fallbackPrice)
-      return fallbackPrice
+      throw new Error('Invalid price data')
     }
   } catch (error) {
     console.error('Error in getGoldiesUsdPrice:', error)
-    return 0.00007442 // Fallback to the provided price
+    throw error
   }
 }
 
@@ -121,41 +119,60 @@ app.frame('/check', async (c) => {
     })
   }
 
-  const balance = await getGoldiesBalance(address)
-  const priceUsd = await getGoldiesUsdPrice()
+  try {
+    const [balance, priceUsd] = await Promise.all([
+      getGoldiesBalance(address),
+      getGoldiesUsdPrice()
+    ])
 
-  let balanceDisplay = ''
-  let usdValueDisplay = ''
+    let balanceDisplay = ''
+    let usdValueDisplay = ''
 
-  if (balance === '0.00') {
-    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
-  } else if (!balance.startsWith('Error')) {
-    const balanceNumber = parseFloat(balance)
-    balanceDisplay = `${balanceNumber.toLocaleString()} $GOLDIES on Polygon`
-    
-    const usdValue = balanceNumber * priceUsd
-    console.log('Calculated USD value:', usdValue)
-    usdValueDisplay = `(~$${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD)`
-  } else {
-    balanceDisplay = balance
-    usdValueDisplay = "Unable to calculate USD value"
+    if (balance === '0.00') {
+      balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
+    } else if (!balance.startsWith('Error')) {
+      const balanceNumber = parseFloat(balance)
+      balanceDisplay = `${balanceNumber.toLocaleString()} $GOLDIES on Polygon`
+      
+      const usdValue = balanceNumber * priceUsd
+      console.log('Calculated USD value:', usdValue)
+      usdValueDisplay = `(~$${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD)`
+    } else {
+      balanceDisplay = balance
+      usdValueDisplay = "Unable to calculate USD value"
+    }
+
+    return c.res({
+      image: (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
+          <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
+          <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
+          <p style={{ fontSize: '30px', textAlign: 'center' }}>{usdValueDisplay}</p>
+          <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
+          <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
+          <p style={{ fontSize: '18px', marginTop: '10px', textAlign: 'center' }}>Price: ${priceUsd.toFixed(8)} USD</p>
+        </div>
+      ),
+      intents: [
+        <Button action="/">Back</Button>,
+        <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
+        <Button action="/check">Refresh</Button>,
+      ]
+    })
+  } catch (error) {
+    console.error('Error in balance check:', error)
+    return c.res({
+      image: (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
+          <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Error</h1>
+          <p style={{ fontSize: '36px', textAlign: 'center' }}>Unable to fetch balance or price. Please try again.</p>
+        </div>
+      ),
+      intents: [
+        <Button action="/">Back</Button>
+      ]
+    })
   }
-
-  return c.res({
-    image: (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
-        <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Your $GOLDIES Balance</h1>
-        <p style={{ fontSize: '36px', textAlign: 'center' }}>{balanceDisplay}</p>
-        <p style={{ fontSize: '30px', textAlign: 'center' }}>{usdValueDisplay}</p>
-        <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
-        <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
-      </div>
-    ),
-    intents: [
-      <Button action="/">Back</Button>,
-      <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-    ]
-  })
 })
 
 export const GET = handle(app)
