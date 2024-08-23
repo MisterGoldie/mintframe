@@ -100,7 +100,7 @@ app.frame('/check', async (c) => {
         </div>
       ),
       intents: [
-        <Button action="/">Back</Button>, // Proper navigation back to the initial frame
+        <Button action="/">Back</Button>,
       ],
     });
   }
@@ -144,9 +144,9 @@ app.frame('/check', async (c) => {
       </div>
     ),
     intents: [
-      <Button action="/">Back</Button>, 
+      <Button action="/">Back</Button>,
       <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-      <Button action={`/check?address=${address}`}>Refresh Balance</Button>, // Update the refresh action to trigger a new check
+      <Button action={`/check?inputText=${address}`}>Refresh Balance</Button>, // Ensuring the address is passed again
     ],
   });
 });
