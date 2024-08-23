@@ -89,7 +89,7 @@ app.frame('/check', async (c) => {
 
   const balance = await getGoldiesBalance(address)
   const priceUSD = await getGoldiesPrice()
-  const usdValue = (parseFloat(balance) * priceUSD).toFixed(2)
+  const usdValue = (parseFloat(balance) * priceUSD).toFixed(8)  // Changed to 8 decimal places
 
   let balanceDisplay = ''
 
