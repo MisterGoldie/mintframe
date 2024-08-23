@@ -28,14 +28,14 @@ async function getGoldiesBalance(address: string): Promise<string> {
     
     const formattedBalance = ethers.formatUnits(balance, decimals)
     
-    return Number(formattedBalance).toFixed(2)
+    return formattedBalance
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error)
     return 'Error: Unable to fetch balance'
   }
 }
 
-async function getGoldiesUsdPrice(): Promise<number | null> {
+async function getGoldiesUsdPrice(): Promise<number> {
   try {
     console.log('Fetching $GOLDIES price from DEX Screener...')
     const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
@@ -48,14 +48,14 @@ async function getGoldiesUsdPrice(): Promise<number | null> {
       return priceUsd
     } else {
       console.error('Invalid price data received from DEX Screener')
-      // Fallback to a hardcoded approximation (you may want to update this value periodically)
-      const fallbackPrice = 0.000001 // 1 GOLDIES = $0.000001 USD (example value)
+      // Fallback to the provided price
+      const fallbackPrice = 0.00007442
       console.log('Using fallback price:', fallbackPrice)
       return fallbackPrice
     }
   } catch (error) {
     console.error('Error in getGoldiesUsdPrice:', error)
-    return null
+    return 0.00007442 // Fallback to the provided price
   }
 }
 
@@ -110,12 +110,9 @@ app.frame('/check', async (c) => {
     const balanceNumber = parseFloat(balance)
     balanceDisplay = `${balanceNumber.toLocaleString()} $GOLDIES on Polygon`
     
-    if (priceUsd !== null) {
-      const usdValue = balanceNumber * priceUsd
-      usdValueDisplay = `(~$${usdValue.toFixed(8)} USD)`
-    } else {
-      usdValueDisplay = "(USD value calculation error)"
-    }
+    const usdValue = balanceNumber * priceUsd
+    console.log('Calculated USD value:', usdValue)
+    usdValueDisplay = `(~$${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD)`
   } else {
     balanceDisplay = balance
     usdValueDisplay = "Unable to calculate USD value"
