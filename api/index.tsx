@@ -1,23 +1,21 @@
-import { Button, Frog } from 'frog'
-import { handle } from 'frog/vercel'
-import { ethers } from 'ethers'
-
-const DEBUG = false; // Set to true to show debug info
+import { Button, Frog } from 'frog';
+import { handle } from 'frog/vercel';
+import { ethers } from 'ethers';
 
 export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
   title: '$GOLDIES Token Tracker on Polygon',
-})
+});
 
-const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
-const POLYGON_RPC_URL = 'https://polygon-rpc.com'
-const POLYGON_CHAIN_ID = 137
+const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e';
+const POLYGON_RPC_URL = 'https://polygon-rpc.com';
+const POLYGON_CHAIN_ID = 137;
 
 const ABI = [
   'function balanceOf(address account) view returns (uint256)',
   'function decimals() view returns (uint8)',
-]
+];
 
 async function getGoldiesBalance(fid: number): Promise<string> {
   let errorMessage = '';
@@ -102,51 +100,40 @@ app.frame('/', (c) => {
     intents: [
       <Button action="/check">Check Balance</Button>,
     ]
-  })
-})
+  });
+});
 
 app.frame('/connect', (c) => {
   return c.res({
     image: (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#f0f0f0', padding: '20px', boxSizing: 'border-box' }}>
-
       </div>
     ),
     intents: [
       <Button action="/">Back</Button>,
       <Button action="/check">Check Balance</Button>
     ]
-  })
-})
+  });
+});
 
 app.frame('/check', async (c) => {
-  const { frameData, verified } = c
-  const fid = frameData?.fid as number | undefined
-  const fidSource = fid ? 'frameData.fid' : 'Not found'
+  const { frameData } = c;
+  const fid = frameData?.fid as number | undefined;
+  const fidSource = fid ? 'frameData.fid' : 'Not found';
 
-  let balance = 'N/A'
+  let balance = 'N/A';
   if (fid !== undefined) {
-    balance = await getGoldiesBalance(fid)
+    balance = await getGoldiesBalance(fid);
   }
 
-  let balanceDisplay = ''
+  let balanceDisplay = '';
   if (balance === '0.00') {
-    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!"
+    balanceDisplay = "You don't have any $GOLDIES tokens on Polygon yet!";
   } else if (!balance.startsWith('Error')) {
-    balanceDisplay = `${balance} $GOLDIES on Polygon`
+    balanceDisplay = `${balance} $GOLDIES on Polygon`;
   } else {
-    balanceDisplay = balance
+    balanceDisplay = balance;
   }
-
-  const debugInfo = JSON.stringify({
-    frameData,
-    verified,
-    fidSource,
-    fid,
-    balance,
-    network: 'Polygon',
-    chainId: POLYGON_CHAIN_ID
-  }, null, 2)
 
   return c.res({
     image: (
@@ -156,7 +143,6 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '24px', marginTop: '20px', textAlign: 'center' }}>Farcaster ID: {fid !== undefined ? fid : 'Not available'}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>FID Source: {fidSource}</p>
         <p style={{ fontSize: '24px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
-        <p style={{ fontSize: '14px', marginTop: '20px', maxWidth: '100%', wordWrap: 'break-word', textAlign: 'left' }}>Debug Info: {debugInfo}</p>
       </div>
     ),
     intents: [
@@ -164,8 +150,8 @@ app.frame('/check', async (c) => {
       <Button action="/check">Refresh Balance</Button>,
       fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null
     ]
-  })
-})
+  });
+});
 
-export const GET = handle(app)
-export const POST = handle(app)
+export const GET = handle(app);
+export const POST = handle(app);
