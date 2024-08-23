@@ -4,6 +4,8 @@ import { ethers } from 'ethers';
 
 const DEBUG = true; // Set to true to show debug info
 
+const NEYNAR_API_KEY = '71332A9D-240D-41E0-8644-31BD70E64036';
+
 export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
@@ -18,6 +20,22 @@ const ABI = [
   'function balanceOf(address account) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ];
+
+async function getEthereumAddressFromFID(fid: number): Promise<string | null> {
+  try {
+    const response = await fetch(`https://api.neynar.com/v2/farcaster/user?fid=${fid}`, {
+      headers: {
+        'Accept': 'application/json',
+        'api_key': NEYNAR_API_KEY
+      }
+    });
+    const data = await response.json();
+    return data.result.verified_addresses[0] || null;
+  } catch (error) {
+    console.error('Error fetching Ethereum address from Neynar:', error);
+    return null;
+  }
+}
 
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
@@ -44,13 +62,6 @@ async function getGoldiesBalance(address: string): Promise<string> {
     }
     return 'Error: Unable to fetch balance';
   }
-}
-
-// Define the structure of the verified object
-interface VerifiedData {
-  interactor?: {
-    verified_accounts?: string[];
-  };
 }
 
 app.frame('/', (c) => {
@@ -104,15 +115,14 @@ app.frame('/check', async (c) => {
   console.log('Verified:', JSON.stringify(verified, null, 2));
 
   const fid = frameData?.fid as number | undefined;
-  let address: string | undefined;
+  let address: string | null = null;
   let addressSource: string = 'Not available';
 
-  // Type assertion for verified object
-  const verifiedData = verified as VerifiedData | boolean;
-
-  if (verifiedData && typeof verifiedData === 'object' && 'interactor' in verifiedData) {
-    address = verifiedData.interactor?.verified_accounts?.[0];
-    addressSource = 'Verified Farcaster data';
+  if (fid) {
+    address = await getEthereumAddressFromFID(fid);
+    if (address) {
+      addressSource = 'Neynar API';
+    }
   }
 
   console.log(`FID: ${fid}, Address: ${address}, Source: ${addressSource}`);
@@ -136,7 +146,7 @@ app.frame('/check', async (c) => {
 
   const debugInfo = JSON.stringify({
     frameData,
-    verified: verifiedData,
+    verified,
     fid,
     address,
     addressSource,
