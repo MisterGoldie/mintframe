@@ -108,9 +108,11 @@ app.frame('/check', async (c) => {
   let address: string | undefined;
 
   // Ensure verified is an object before casting
-  if (typeof verified === 'object' && verified !== null) {
+  if (verified && typeof verified === 'object') {
     const verifiedData = verified as VerifiedData;
     address = verifiedData.walletAddress || verifiedData.ethAddress || verifiedData.address;
+  } else {
+    address = undefined;
   }
 
   console.log(`FID: ${fid}, Address: ${address}`);
