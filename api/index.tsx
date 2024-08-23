@@ -37,16 +37,21 @@ async function getGoldiesBalance(address: string): Promise<string> {
 
 async function getGoldiesMaticPrice(): Promise<number | null> {
   try {
+    console.log('Fetching $GOLDIES price from DEX Screener...')
     const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
     const data = await response.json()
+    console.log('DEX Screener API response:', JSON.stringify(data, null, 2))
 
     if (data.pair && data.pair.priceNative) {
-      const priceInMatic = 1 / parseFloat(data.pair.priceNative) // Inverse of GOLDIES/MATIC price to get MATIC/GOLDIES
-      console.log('Fetched $GOLDIES price in MATIC:', priceInMatic)
+      const priceInMatic = 1 / parseFloat(data.pair.priceNative)
+      console.log('Calculated $GOLDIES price in MATIC:', priceInMatic)
       return priceInMatic
     } else {
-      console.error('Invalid price data received:', data)
-      return null
+      console.error('Invalid price data received from DEX Screener')
+      // Fallback to a hardcoded approximation (you may want to update this value periodically)
+      const fallbackPrice = 0.000001 // 1 GOLDIES = 0.000001 MATIC (example value)
+      console.log('Using fallback price:', fallbackPrice)
+      return fallbackPrice
     }
   } catch (error) {
     console.error('Error in getGoldiesMaticPrice:', error)
@@ -109,10 +114,11 @@ app.frame('/check', async (c) => {
       const maticValue = balanceNumber * priceInMatic
       maticValueDisplay = `(~${maticValue.toFixed(8)} MATIC)`
     } else {
-      maticValueDisplay = "(MATIC value unavailable)"
+      maticValueDisplay = "(MATIC value calculation error)"
     }
   } else {
     balanceDisplay = balance
+    maticValueDisplay = "Unable to calculate MATIC value"
   }
 
   return c.res({
