@@ -157,7 +157,6 @@ app.frame('/check', async (c) => {
       intents: [
         <Button action="/">Back</Button>,
         <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
-        <Button action="/check">Refresh</Button>,
       ]
     })
   } catch (error) {
