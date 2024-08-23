@@ -48,7 +48,6 @@ async function getGoldiesUsdPrice(): Promise<number> {
       return priceUsd
     } else {
       console.error('Invalid price data received from DEX Screener')
-      // Fallback to the provided price
       const fallbackPrice = 0.00007442
       console.log('Using fallback price:', fallbackPrice)
       return fallbackPrice
@@ -65,9 +64,33 @@ app.frame('/', (c) => {
   
   return c.res({
     image: (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
-        <h1 style={{ fontSize: '60px', marginBottom: '20px', textAlign: 'center' }}>$GOLDIES Balance Checker</h1>
-        <p style={{ fontSize: '36px', marginBottom: '20px', textAlign: 'center' }}>Enter your Polygon address</p>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        width: '100%', 
+        height: '100%', 
+        backgroundImage: 'url(https://amaranth-adequate-condor-278.mypinata.cloud/ipfs/QmVfEoPSGHFGByQoGxUUwPq2qzE4uKXT7CSKVaigPANmjZ)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        padding: '20px', 
+        boxSizing: 'border-box' 
+      }}>
+        <h1 style={{ 
+          fontSize: '60px', 
+          marginBottom: '20px', 
+          textAlign: 'center',
+          color: 'white',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+        }}>$GOLDIES Balance Checker</h1>
+        <p style={{ 
+          fontSize: '36px', 
+          marginBottom: '20px', 
+          textAlign: 'center',
+          color: 'white',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+        }}>Enter your Polygon address</p>
         {errorMessage && (
           <p style={{ fontSize: '18px', color: 'red', marginBottom: '20px', textAlign: 'center' }}>{errorMessage}</p>
         )}
