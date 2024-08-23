@@ -12,6 +12,7 @@ export const app = new Frog({
 const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
 const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao'
 const POLYGON_CHAIN_ID = 137
+const FALLBACK_PRICE = 0.00007442 // Fallback price if unable to fetch
 
 const ABI = [
   'function balanceOf(address account) view returns (uint256)',
@@ -20,6 +21,7 @@ const ABI = [
 
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
+    console.log('Fetching balance for address:', address)
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID)
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider)
     
@@ -27,7 +29,7 @@ async function getGoldiesBalance(address: string): Promise<string> {
     const decimals = await contract.decimals()
     
     const formattedBalance = ethers.formatUnits(balance, decimals)
-    
+    console.log('Fetched balance:', formattedBalance)
     return formattedBalance
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error)
@@ -48,11 +50,11 @@ async function getGoldiesUsdPrice(): Promise<number> {
       return priceUsd
     } else {
       console.error('Invalid price data received from DEX Screener')
-      throw new Error('Invalid price data')
+      return FALLBACK_PRICE
     }
   } catch (error) {
     console.error('Error in getGoldiesUsdPrice:', error)
-    throw error
+    return FALLBACK_PRICE
   }
 }
 
@@ -120,10 +122,9 @@ app.frame('/check', async (c) => {
   }
 
   try {
-    const [balance, priceUsd] = await Promise.all([
-      getGoldiesBalance(address),
-      getGoldiesUsdPrice()
-    ])
+    console.log('Fetching balance and price for address:', address)
+    const balance = await getGoldiesBalance(address)
+    const priceUsd = await getGoldiesUsdPrice()
 
     let balanceDisplay = ''
     let usdValueDisplay = ''
@@ -161,15 +162,18 @@ app.frame('/check', async (c) => {
     })
   } catch (error) {
     console.error('Error in balance check:', error)
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
     return c.res({
       image: (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', backgroundColor: '#FF8B19', padding: '20px', boxSizing: 'border-box' }}>
           <h1 style={{ fontSize: '48px', marginBottom: '20px', textAlign: 'center' }}>Error</h1>
           <p style={{ fontSize: '36px', textAlign: 'center' }}>Unable to fetch balance or price. Please try again.</p>
+          <p style={{ fontSize: '24px', textAlign: 'center' }}>Error details: {errorMessage}</p>
         </div>
       ),
       intents: [
-        <Button action="/">Back</Button>
+        <Button action="/">Back</Button>,
+        <Button action="/check">Retry</Button>
       ]
     })
   }
