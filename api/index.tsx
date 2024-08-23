@@ -1,6 +1,6 @@
-import { Button, Frog } from 'frog'
-import { handle } from 'frog/vercel'
-import { ethers } from 'ethers'
+import { Button, Frog } from 'frog';
+import { handle } from 'frog/vercel';
+import { ethers } from 'ethers';
 
 const DEBUG = true; // Set to true to show debug info
 
@@ -8,64 +8,51 @@ export const app = new Frog({
   basePath: '/api',
   imageOptions: { width: 1200, height: 630 },
   title: '$GOLDIES Token Tracker on Polygon',
-})
+});
 
-const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
-const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao'
-const POLYGON_CHAIN_ID = 137
-const FARCASTER_API_URL = 'https://api.farcaster.xyz/v2'
+const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e';
+const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao';
+const POLYGON_CHAIN_ID = 137;
 
 const ABI = [
   'function balanceOf(address account) view returns (uint256)',
   'function decimals() view returns (uint8)',
-]
-
-async function getWalletAddressFromFarcaster(fid: number): Promise<string | null> {
-  const query = `
-    query GetUserByFid($fid: Int!) {
-      user(fid: $fid) {
-        custodyAddress
-      }
-    }
-  `;
-
-  try {
-    const response = await fetch(FARCASTER_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        query,
-        variables: { fid },
-      }),
-    });
-
-    const data = await response.json();
-    return data.data.user.custodyAddress;
-  } catch (error) {
-    console.error('Error fetching wallet address from Farcaster:', error);
-    return null;
-  }
-}
+];
 
 async function getGoldiesBalance(address: string): Promise<string> {
   try {
+    console.log(`Attempting to fetch balance for address: ${address}`);
     const provider = new ethers.JsonRpcProvider(ALCHEMY_POLYGON_URL, POLYGON_CHAIN_ID);
+    console.log('Provider created');
     const contract = new ethers.Contract(GOLDIES_TOKEN_ADDRESS, ABI, provider);
+    console.log('Contract instance created');
     
     const balance = await contract.balanceOf(address);
+    console.log(`Raw balance: ${balance.toString()}`);
+    
     const decimals = await contract.decimals();
+    console.log(`Decimals: ${decimals}`);
     
     const formattedBalance = ethers.formatUnits(balance, decimals);
+    console.log(`Formatted balance: ${formattedBalance}`);
     
     return Number(formattedBalance).toFixed(2);
   } catch (error) {
     console.error('Error in getGoldiesBalance:', error);
+    if (error instanceof Error) {
+      return `Error: ${error.message}`;
+    }
     return 'Error: Unable to fetch balance';
   }
 }
+
+// Define the expected structure of verified data
+type VerifiedData = {
+  walletAddress?: string;
+  ethAddress?: string;
+  address?: string;
+  // other properties if necessary
+};
 
 app.frame('/', (c) => {
   return c.res({
@@ -109,20 +96,27 @@ app.frame('/', (c) => {
     intents: [
       <Button action="/check">Check Balance</Button>,
     ]
-  })
-})
+  });
+});
 
 app.frame('/check', async (c) => {
-  const { frameData } = c;
-  const fid = frameData?.fid as number | undefined;
+  const { frameData, verified } = c;
+  console.log('Frame Data:', JSON.stringify(frameData, null, 2));
+  console.log('Verified:', JSON.stringify(verified, null, 2));
 
-  let address: string | null = null;
+  const fid = frameData?.fid as number | undefined;
+  let address: string | undefined;
+
+  // Ensure verified is an object before casting
+  if (typeof verified === 'object' && verified !== null) {
+    const verifiedData = verified as VerifiedData;
+    address = verifiedData.walletAddress || verifiedData.ethAddress || verifiedData.address;
+  }
+
+  console.log(`FID: ${fid}, Address: ${address}`);
+
   let balance = 'N/A';
   let balanceDisplay = '';
-
-  if (fid) {
-    address = await getWalletAddressFromFarcaster(fid);
-  }
 
   if (address) {
     balance = await getGoldiesBalance(address);
@@ -140,6 +134,7 @@ app.frame('/check', async (c) => {
 
   const debugInfo = JSON.stringify({
     frameData,
+    verified,
     fid,
     address,
     balance,
