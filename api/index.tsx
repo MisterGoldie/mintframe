@@ -145,14 +145,12 @@ app.frame('/check', async (c) => {
         <p style={{ fontSize: '36px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
       </div>
     ),
-    intents: (
-      <div>
-        <Button action="/">Back</Button>
-        <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">View on Polygonscan</Button.Link>
-        <Button action="/check">Refresh Balance</Button>
-        {fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null}
-      </div>
-    )
+    intents: [
+      <Button action="/">Back</Button>,
+      <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">View on Polygonscan</Button.Link>,
+      <Button action="/check">Refresh Balance</Button>,
+      fid === undefined ? <Button action="/connect">Connect Wallet</Button> : null
+    ]
   });
 });
 
