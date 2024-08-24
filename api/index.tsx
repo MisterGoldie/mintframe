@@ -104,8 +104,8 @@ app.frame('/', (c) => {
 })
 
 app.frame('/check', async (c) => {
-  const { frameData } = c
-  const address = frameData?.inputText
+  const { frameData, buttonValue } = c
+  const address = frameData?.inputText || buttonValue
 
   if (!address || !ethers.isAddress(address)) {
     return c.res({
@@ -157,6 +157,7 @@ app.frame('/check', async (c) => {
       intents: [
         <Button action="/">Back</Button>,
         <Button.Link href="https://polygonscan.com/token/0x3150e01c36ad3af80ba16c1836efcd967e96776e">Polygonscan</Button.Link>,
+        <Button action="/check" value={address}>Reset</Button>,
       ]
     })
   } catch (error) {
@@ -172,7 +173,7 @@ app.frame('/check', async (c) => {
       ),
       intents: [
         <Button action="/">Back</Button>,
-        <Button action="/check">Retry</Button>
+        <Button action="/check" value={address}>Retry</Button>
       ]
     })
   }
