@@ -13,7 +13,6 @@ const GOLDIES_TOKEN_ADDRESS = '0x3150E01c36ad3Af80bA16C1836eFCD967E96776e'
 const ALCHEMY_POLYGON_URL = 'https://polygon-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao'
 const ALCHEMY_MAINNET_URL = 'https://eth-mainnet.g.alchemy.com/v2/pe-VGWmYoLZ0RjSXwviVMNIDLGwgfkao'
 const POLYGON_CHAIN_ID = 137
-const FALLBACK_PRICE = 0.00007442 // Fallback price if unable to fetch
 
 const ABI = [
   'function balanceOf(address account) view returns (uint256)',
@@ -64,7 +63,7 @@ async function getGoldiesBalance(address: string): Promise<string> {
   }
 }
 
-async function getGoldiesUsdPrice(): Promise<number> {
+async function getGoldiesUsdPrice(): Promise<number | null> {
   try {
     console.log('Fetching $GOLDIES price from DEX Screener...')
     const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
@@ -77,11 +76,11 @@ async function getGoldiesUsdPrice(): Promise<number> {
       return priceUsd
     } else {
       console.error('Invalid price data received from DEX Screener')
-      return FALLBACK_PRICE
+      return null
     }
   } catch (error) {
     console.error('Error in getGoldiesUsdPrice:', error)
-    return FALLBACK_PRICE
+    return null
   }
 }
 
@@ -163,9 +162,13 @@ app.frame('/check', async (c) => {
       const balanceNumber = parseFloat(balance)
       balanceDisplay = `${balanceNumber.toLocaleString()} $GOLDIES on Polygon`
       
-      const usdValue = balanceNumber * priceUsd
-      console.log('Calculated USD value:', usdValue)
-      usdValueDisplay = `(~$${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD)`
+      if (priceUsd !== null) {
+        const usdValue = balanceNumber * priceUsd
+        console.log('Calculated USD value:', usdValue)
+        usdValueDisplay = `(~$${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD)`
+      } else {
+        usdValueDisplay = "(USD value unavailable)"
+      }
     } else {
       balanceDisplay = balance
       usdValueDisplay = "Unable to calculate USD value"
@@ -179,7 +182,9 @@ app.frame('/check', async (c) => {
           <p style={{ fontSize: '42px', textAlign: 'center' }}>{usdValueDisplay}</p>
           <p style={{ fontSize: '32px', marginTop: '20px', textAlign: 'center' }}>Address: {address}</p>
           <p style={{ fontSize: '32px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
-          <p style={{ fontSize: '26px', marginTop: '10px', textAlign: 'center' }}>Price: ${priceUsd.toFixed(8)} USD</p>
+          {priceUsd !== null && (
+            <p style={{ fontSize: '26px', marginTop: '10px', textAlign: 'center' }}>Price: ${priceUsd.toFixed(8)} USD</p>
+          )}
         </div>
       ),
       intents: [
