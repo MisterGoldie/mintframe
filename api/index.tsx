@@ -63,10 +63,13 @@ async function getGoldiesBalance(address: string): Promise<string> {
   }
 }
 
-async function getGoldiesUsdPrice(): Promise<number | null> {
+async function getGoldiesUsdPrice(): Promise<number> {
   try {
     console.log('Fetching $GOLDIES price from DEX Screener...')
     const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const data = await response.json()
     console.log('DEX Screener API response:', JSON.stringify(data, null, 2))
 
@@ -75,12 +78,12 @@ async function getGoldiesUsdPrice(): Promise<number | null> {
       console.log('Fetched $GOLDIES price in USD:', priceUsd)
       return priceUsd
     } else {
-      console.error('Invalid price data received from DEX Screener')
-      return null
+      console.error('Invalid or missing price data in DEX Screener response:', data)
+      throw new Error('Invalid price data received from DEX Screener')
     }
   } catch (error) {
     console.error('Error in getGoldiesUsdPrice:', error)
-    return null
+    throw error // Re-throw the error to be handled by the caller
   }
 }
 
@@ -151,7 +154,15 @@ app.frame('/check', async (c) => {
     const address = await resolveAddress(input)
     console.log('Fetching balance and price for address:', address)
     const balance = await getGoldiesBalance(address)
-    const priceUsd = await getGoldiesUsdPrice()
+    let priceUsd: number | null = null
+    let priceError: string | null = null
+
+    try {
+      priceUsd = await getGoldiesUsdPrice()
+    } catch (error) {
+      console.error('Failed to fetch $GOLDIES price:', error)
+      priceError = error instanceof Error ? error.message : 'Unknown error fetching price'
+    }
 
     let balanceDisplay = ''
     let usdValueDisplay = ''
@@ -167,7 +178,7 @@ app.frame('/check', async (c) => {
         console.log('Calculated USD value:', usdValue)
         usdValueDisplay = `(~$${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD)`
       } else {
-        usdValueDisplay = "(USD value unavailable)"
+        usdValueDisplay = priceError ? `(Error fetching USD value: ${priceError})` : "(USD value calculation error)"
       }
     } else {
       balanceDisplay = balance
@@ -184,6 +195,9 @@ app.frame('/check', async (c) => {
           <p style={{ fontSize: '32px', marginTop: '10px', textAlign: 'center' }}>Network: Polygon (Chain ID: {POLYGON_CHAIN_ID})</p>
           {priceUsd !== null && (
             <p style={{ fontSize: '26px', marginTop: '10px', textAlign: 'center' }}>Price: ${priceUsd.toFixed(8)} USD</p>
+          )}
+          {priceError && (
+            <p style={{ fontSize: '18px', color: 'red', marginTop: '10px', textAlign: 'center' }}>Price Error: {priceError}</p>
           )}
         </div>
       ),
