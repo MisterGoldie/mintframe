@@ -71,7 +71,7 @@ async function getGoldiesUsdPrice(): Promise<number> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json()
-    console.log('DEX Screener API response:', JSON.stringify(data, null, 2))
+    console.log('Uniswap API response:', JSON.stringify(data, null, 2))
 
     if (data.pair && data.pair.priceUsd) {
       const priceUsd = parseFloat(data.pair.priceUsd)
