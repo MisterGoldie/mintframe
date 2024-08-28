@@ -65,21 +65,21 @@ async function getGoldiesBalance(address: string): Promise<string> {
 
 async function getGoldiesUsdPrice(): Promise<number> {
   try {
-    console.log('Fetching $GOLDIES price from Uniswap...')
-    const response = await fetch('https://app.uniswap.org/explore/tokens/polygon/0x3150e01c36ad3af80ba16c1836efcd967e96776e')
+    console.log('Fetching $GOLDIES price from DEX Screener...')
+    const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/polygon/0x19976577bb2fa3174b4ae4cf55e6795dde730135')
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json()
-    console.log('Uniswap API response:', JSON.stringify(data, null, 2))
+    console.log('DEX Screener API response:', JSON.stringify(data, null, 2))
 
     if (data.pair && data.pair.priceUsd) {
       const priceUsd = parseFloat(data.pair.priceUsd)
       console.log('Fetched $GOLDIES price in USD:', priceUsd)
       return priceUsd
     } else {
-      console.error('Invalid or missing price data in Uniswap response:', data)
-      throw new Error('Invalid price data received from Uniswap')
+      console.error('Invalid or missing price data in DEX Screener response:', data)
+      throw new Error('Invalid price data received from DEX Screener')
     }
   } catch (error) {
     console.error('Error in getGoldiesUsdPrice:', error)
